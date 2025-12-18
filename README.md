@@ -1,4 +1,4 @@
-# order-processing-platform
+# Order Processing Platform
 Система обработки заказов с gRPC-взаимодействием, событийной коммуникацией через Kafka, PostgreSQL и полноценным мониторингом в Prometheus + Grafana.
 
 Микросервисная платформа обработки заказов.
