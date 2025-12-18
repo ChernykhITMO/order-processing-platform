@@ -15,3 +15,7 @@
 - InventoryReserved: “товар зарезервирован” (order_id, sku->qty)
 - InventoryReservationFailed: “не смогли зарезервировать”
 - OrderCompleted / OrderCanceled: “заказ завершён/отменён”
+
+## Архитектура
+
+![architecture](docs/architecture.png)
