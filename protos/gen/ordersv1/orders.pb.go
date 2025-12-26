@@ -718,7 +718,7 @@ const file_orders_proto_rawDesc = "" +
 	"\bGetOrder\x12\x1a.orders.v1.GetOrderRequest\x1a\x1b.orders.v1.GetOrderResponse\x12I\n" +
 	"\n" +
 	"ListOrders\x12\x1c.orders.v1.ListOrdersRequest\x1a\x1d.orders.v1.ListOrdersResponse\x12L\n" +
-	"\vCancelOrder\x12\x1d.orders.v1.CancelOrderRequest\x1a\x1e.orders.v1.CancelOrderResponseB6Z4github.com/ChernykhITMO/protos/gen/ordersv1;ordersv1b\x06proto3"
+	"\vCancelOrder\x12\x1d.orders.v1.CancelOrderRequest\x1a\x1e.orders.v1.CancelOrderResponseBPZNgithub.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1;ordersv1b\x06proto3"
 
 var (
 	file_orders_proto_rawDescOnce sync.Once

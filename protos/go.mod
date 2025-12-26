@@ -1,4 +1,4 @@
-module github.com/ChernykhITMO/protos
+module github.com/ChernykhITMO/order-processing-platform/protos
 
 go 1.25.1
 

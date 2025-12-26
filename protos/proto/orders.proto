@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package orders.v1;
 
-option go_package = "github.com/ChernykhITMO/protos/gen/ordersv1;ordersv1";
+option go_package = "github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1;ordersv1";
 
 import "google/protobuf/timestamp.proto";
 
@@ -80,4 +80,4 @@ message CancelOrderResponse {
   OrderStatus status = 1;
 }
 
-// protoc -I proto proto/orders.proto --go_out=./gen --go_opt=paths=source_relative --go-grpc_out=./gen --go-grpc_opt=paths=source_relative
+// protoc -I proto proto/orders.proto --go_out=./gen/ordersv1 --go_opt=paths=source_relative --go-grpc_out=./gen/ordersv1 --go-grpc_opt=paths=source_relative
