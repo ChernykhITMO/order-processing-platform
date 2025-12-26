@@ -7,13 +7,12 @@
 package ordersv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -139,8 +138,8 @@ func (x *Money) GetNanos() int32 {
 type OrderItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ProductId     int64                  `protobuf:"varint,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
-	Quantity      int32  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	Price         *Money `protobuf:"bytes,3,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity      int32                  `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Price         *Money                 `protobuf:"bytes,3,opt,name=price,proto3" json:"price,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -199,11 +198,11 @@ func (x *OrderItem) GetPrice() *Money {
 type Order struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrderId       int64                  `protobuf:"varint,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	UserId      int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Status      OrderStatus            `protobuf:"varint,3,opt,name=status,proto3,enum=orders.v1.OrderStatus" json:"status,omitempty"`
-	Items       []*OrderItem           `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
-	TotalAmount *Money                 `protobuf:"bytes,5,opt,name=total_amount,json=totalAmount,proto3" json:"total_amount,omitempty"`
-	CreatedAt   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Status        OrderStatus            `protobuf:"varint,3,opt,name=status,proto3,enum=orders.v1.OrderStatus" json:"status,omitempty"`
+	Items         []*OrderItem           `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
+	TotalAmount   *Money                 `protobuf:"bytes,5,opt,name=total_amount,json=totalAmount,proto3" json:"total_amount,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -290,8 +289,8 @@ func (x *Order) GetUpdatedAt() *timestamppb.Timestamp {
 
 type CreateOrderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64        `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Items         []*OrderItem `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Items         []*OrderItem           `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -342,8 +341,8 @@ func (x *CreateOrderRequest) GetItems() []*OrderItem {
 
 type CreateOrderResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrderId       int64  `protobuf:"varint,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	Order         *Order `protobuf:"bytes,2,opt,name=order,proto3" json:"order,omitempty"`
+	OrderId       int64                  `protobuf:"varint,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	Order         *Order                 `protobuf:"bytes,2,opt,name=order,proto3" json:"order,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -482,8 +481,8 @@ func (x *GetOrderResponse) GetOrder() *Order {
 
 type ListOrdersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        int64       `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Status        OrderStatus `protobuf:"varint,2,opt,name=status,proto3,enum=orders.v1.OrderStatus" json:"status,omitempty"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Status        OrderStatus            `protobuf:"varint,2,opt,name=status,proto3,enum=orders.v1.OrderStatus" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -719,7 +718,7 @@ const file_orders_proto_rawDesc = "" +
 	"\bGetOrder\x12\x1a.orders.v1.GetOrderRequest\x1a\x1b.orders.v1.GetOrderResponse\x12I\n" +
 	"\n" +
 	"ListOrders\x12\x1c.orders.v1.ListOrdersRequest\x1a\x1d.orders.v1.ListOrdersResponse\x12L\n" +
-	"\vCancelOrder\x12\x1d.orders.v1.CancelOrderRequest\x1a\x1e.orders.v1.CancelOrderResponseBIZGgithub.com/ChernykhITMO/order-processing-platform/gen/ordersv1;ordersv1b\x06proto3"
+	"\vCancelOrder\x12\x1d.orders.v1.CancelOrderRequest\x1a\x1e.orders.v1.CancelOrderResponseB6Z4github.com/ChernykhITMO/protos/gen/ordersv1;ordersv1b\x06proto3"
 
 var (
 	file_orders_proto_rawDescOnce sync.Once
