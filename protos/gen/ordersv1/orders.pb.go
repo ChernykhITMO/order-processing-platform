@@ -85,8 +85,7 @@ func (OrderStatus) EnumDescriptor() ([]byte, []int) {
 
 type Money struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Units         int64                  `protobuf:"varint,1,opt,name=units,proto3" json:"units,omitempty"`
-	Nanos         int32                  `protobuf:"varint,2,opt,name=nanos,proto3" json:"nanos,omitempty"`
+	Money         int64                  `protobuf:"varint,1,opt,name=money,proto3" json:"money,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -121,16 +120,9 @@ func (*Money) Descriptor() ([]byte, []int) {
 	return file_orders_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Money) GetUnits() int64 {
+func (x *Money) GetMoney() int64 {
 	if x != nil {
-		return x.Units
-	}
-	return 0
-}
-
-func (x *Money) GetNanos() int32 {
-	if x != nil {
-		return x.Nanos
+		return x.Money
 	}
 	return 0
 }
@@ -667,10 +659,9 @@ var File_orders_proto protoreflect.FileDescriptor
 
 const file_orders_proto_rawDesc = "" +
 	"\n" +
-	"\forders.proto\x12\torders.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"3\n" +
+	"\forders.proto\x12\torders.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x1d\n" +
 	"\x05Money\x12\x14\n" +
-	"\x05units\x18\x01 \x01(\x03R\x05units\x12\x14\n" +
-	"\x05nanos\x18\x02 \x01(\x05R\x05nanos\"n\n" +
+	"\x05money\x18\x01 \x01(\x03R\x05money\"n\n" +
 	"\tOrderItem\x12\x1d\n" +
 	"\n" +
 	"product_id\x18\x01 \x01(\x03R\tproductId\x12\x1a\n" +

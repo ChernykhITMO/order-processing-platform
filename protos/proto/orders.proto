@@ -24,8 +24,7 @@ enum OrderStatus {
 }
 
 message Money {
-  int64 units = 1;
-  int32 nanos = 2;
+  int64 money = 1;
 }
 
 message OrderItem {
