@@ -1,0 +1,4 @@
+
+
+INSERT INTO orders (user_id, status)
+VALUES (1, 'NEW');
