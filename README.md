@@ -16,6 +16,9 @@
 - InventoryReservationFailed: “не смогли зарезервировать”
 - OrderCompleted / OrderCanceled: “заказ завершён/отменён”
 
+[Protobuf contracts](github.com/ChernykhITMO/order-processing-proto)
+
 ## Архитектура
 
 ![architecture](docs/architecture.png)
+
