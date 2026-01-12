@@ -3,7 +3,7 @@ module github.com/ChernykhITMO/order-processing-platform/orders
 go 1.25.1
 
 require (
-	github.com/ChernykhITMO/order-processing-platform/protos v0.0.3
+	github.com/ChernykhITMO/order-processing-proto v0.0.1
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.78.0

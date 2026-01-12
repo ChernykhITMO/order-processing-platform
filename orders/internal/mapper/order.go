@@ -2,7 +2,7 @@ package mapper
 
 import (
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	"github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1"
+	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

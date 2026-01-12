@@ -22,3 +22,12 @@
 
 ![architecture](docs/architecture.png)
 
+## Конфигурация окружения
+
+Локально используем `.env` файлы (в гите они игнорируются).
+
+1) Скопируйте шаблоны:
+   ```bash
+   cp .env.example .env
+   cp orders/.env.example orders/.env
+

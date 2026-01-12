@@ -9,6 +9,7 @@ import (
 	gw "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/grpc"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
+	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )

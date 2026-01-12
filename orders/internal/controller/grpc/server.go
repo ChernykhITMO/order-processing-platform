@@ -6,7 +6,7 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
-	"github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1"
+	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
