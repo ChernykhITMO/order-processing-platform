@@ -51,7 +51,6 @@ message CreateOrderRequest {
 
 message CreateOrderResponse {
   int64 order_id = 1;
-  Order order = 2;
 }
 
 message GetOrderRequest {
