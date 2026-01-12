@@ -1,9 +1,11 @@
-package orders
+package grpc
 
 import (
 	"context"
-	"math/rand"
+	"fmt"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
 	"github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,13 +13,42 @@ import (
 
 type gRPCServer struct {
 	ordersv1.UnimplementedOrdersServiceServer
+	usecase *usecase.Order
+}
+
+func NewServer(uc *usecase.Order) *gRPCServer {
+	return &gRPCServer{
+		usecase: uc,
+	}
 }
 
 func (g *gRPCServer) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRequest) (*ordersv1.CreateOrderResponse, error) {
-	return &ordersv1.CreateOrderResponse{OrderId: rand.Int63(), Order: nil}, nil
+	const op = "server.CreateOrder"
+	items, err := mapper.MapProtoItems(req.Items)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	orderID, err := g.usecase.CreateOrder(ctx, req.UserId, items)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &ordersv1.CreateOrderResponse{OrderId: orderID}, nil
 }
+
 func (g *gRPCServer) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest) (*ordersv1.GetOrderResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetOrder not implemented")
+	const op = "server.GetOrder"
+
+	order, err := g.usecase.GetOrder(ctx, req.OrderId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &ordersv1.GetOrderResponse{
+		Order: mapper.MapToProto(*order),
+	}, nil
+
 }
 func (g *gRPCServer) ListOrders(ctx context.Context, req *ordersv1.ListOrdersRequest) (*ordersv1.ListOrdersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOrders not implemented")

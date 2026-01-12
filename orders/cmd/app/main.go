@@ -2,21 +2,51 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net"
+	"os"
 
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/grpc/orders"
-	"github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1"
+	gw "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/grpc"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatal(err)
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("env not loaded")
 	}
 
-	gRPCServer := grpc.NewServer()
-	ordersv1.RegisterOrdersServiceServer(gRPCServer, &orders.Orders{})
-	log.Println("orders gRPC listening on :50051")
-	log.Fatal(gRPCServer.Serve(lis))
+	addr := envOr("ORDERS_GRPC_ADDR", ":50051")
+	dsn := os.Getenv("ORDERS_PG_DSN")
+	if dsn == "" {
+		log.Fatal("ORDERS_PG_DSN is required")
+	}
+
+	storage, err := postgres.New(dsn)
+	if err != nil {
+		log.Fatalf("postgres: %v", err)
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	uc := usecase.New(logger, storage)
+
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("listen: %v", err)
+	}
+
+	srv := grpc.NewServer()
+	ordersv1.RegisterOrdersServiceServer(srv, gw.NewServer(uc))
+
+	log.Printf("orders gRPC listening on %s", addr)
+	log.Fatal(srv.Serve(lis))
+}
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }

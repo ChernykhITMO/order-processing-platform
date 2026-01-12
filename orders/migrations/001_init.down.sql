@@ -1,4 +1,5 @@
-
-
-INSERT INTO orders (user_id, status)
-VALUES (1, 'NEW');
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP SCHEMA IF EXISTS orders_db CASCADE;
+DROP SCHEMA IF EXISTS order_test;
+DROP SCHEMA IF EXISTS orders_schema;
