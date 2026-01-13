@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
@@ -24,29 +25,37 @@ func NewServer(uc *usecase.Order) *gRPCServer {
 
 func (g *gRPCServer) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRequest) (*ordersv1.CreateOrderResponse, error) {
 	const op = "server.CreateOrder"
-	items, err := mapper.MapProtoItems(req.Items)
+	var input dto.CreateOrderInput
+
+	items, err := mapper.MapToCreateItems(req.Items)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	orderID, err := g.usecase.CreateOrder(ctx, req.UserId, items)
+	input.UserID = req.UserId
+	input.Items = items
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &ordersv1.CreateOrderResponse{OrderId: orderID}, nil
+	output, err := g.usecase.CreateOrder(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &ordersv1.CreateOrderResponse{OrderId: output.ID}, nil
 }
 
 func (g *gRPCServer) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest) (*ordersv1.GetOrderResponse, error) {
 	const op = "server.GetOrder"
-
-	order, err := g.usecase.GetOrder(ctx, req.OrderId)
+	input := dto.GetOrderInput{ID: req.OrderId}
+	output, err := g.usecase.GetOrder(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &ordersv1.GetOrderResponse{
-		Order: mapper.MapToProto(*order),
+		Order: mapper.MapToProto(output.Order),
 	}, nil
 
 }

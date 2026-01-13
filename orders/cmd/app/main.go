@@ -7,11 +7,18 @@ import (
 	"os"
 
 	gw "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/grpc"
+	k "github.com/ChernykhITMO/order-processing-platform/orders/internal/kafka"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+)
+
+var address = []string{"localhost:9092"}
+
+const (
+	topic = "my-topic"
 )
 
 func main() {
@@ -30,8 +37,13 @@ func main() {
 		log.Fatalf("postgres: %v", err)
 	}
 
+	p, err := k.NewProducer(address)
+	if err != nil {
+		log.Fatalf("kafka: %v", err)
+	}
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	uc := usecase.New(logger, storage)
+	uc := usecase.New(logger, storage, p)
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {

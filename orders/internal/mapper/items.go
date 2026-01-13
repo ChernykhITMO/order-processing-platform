@@ -8,21 +8,6 @@ import (
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 )
 
-func MapCreateItems(items []dto.CreateOrderItem) ([]domain.OrderItem, error) {
-	const op = "mapper.CreateItems"
-	res := make([]domain.OrderItem, 0, len(items))
-
-	for _, it := range items {
-		o, err := domain.NewOrderItem(it.ProductID, it.Quantity, it.Price)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
-		res = append(res, o)
-	}
-
-	return res, nil
-}
-
 func MapProtoItems(items []*ordersv1.OrderItem) ([]domain.OrderItem, error) {
 	const op = "mapper.ProtoItems"
 
@@ -40,4 +25,41 @@ func MapProtoItems(items []*ordersv1.OrderItem) ([]domain.OrderItem, error) {
 		res = append(res, o)
 	}
 	return res, nil
+}
+
+func MapInputItems(inputItems []dto.CreateOrderItem) ([]domain.OrderItem, error) {
+	const op = "mapper.InputCreateItems"
+
+	res := make([]domain.OrderItem, 0, len(inputItems))
+
+	for _, it := range inputItems {
+		item, err := domain.NewOrderItem(it.ProductID, it.Quantity, it.Price)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		res = append(res, item)
+	}
+
+	return res, nil
+}
+
+func MapToCreateItems(items []*ordersv1.OrderItem) ([]dto.CreateOrderItem, error) {
+	const op = "mapper.CreateItems"
+
+	res := make([]dto.CreateOrderItem, 0, len(items))
+
+	for _, it := range items {
+		var price int64
+		if it.GetPrice() != nil {
+			price = it.GetPrice().GetMoney()
+		}
+		o := dto.CreateOrderItem{
+			ProductID: it.ProductId,
+			Quantity:  it.Quantity,
+			Price:     price,
+		}
+		res = append(res, o)
+	}
+	return res, nil
+
 }
