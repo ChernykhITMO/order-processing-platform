@@ -17,10 +17,6 @@ import (
 
 var address = []string{"localhost:9092"}
 
-const (
-	topic = "my-topic"
-)
-
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("env not loaded")
