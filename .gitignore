@@ -4,3 +4,4 @@ bin/
 build/
 orders/.env
 .env
+payments/.env
