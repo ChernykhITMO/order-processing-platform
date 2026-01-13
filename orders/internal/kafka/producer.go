@@ -28,13 +28,13 @@ func NewProducer(address []string) (*Producer, error) {
 	return &Producer{producer: p}, nil
 }
 
-func (p *Producer) Produce(ctx context.Context, message, topic string) error {
+func (p *Producer) Produce(ctx context.Context, message []byte, topic string) error {
 	const op = "kafka.Produce"
 	kafkaMsg := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
 			Partition: kafka.PartitionAny},
-		Value:         []byte(message),
+		Value:         message,
 		Key:           nil,
 		Timestamp:     time.Time{},
 		TimestampType: 0,

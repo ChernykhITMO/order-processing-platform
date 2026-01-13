@@ -13,7 +13,7 @@ type Postgres interface {
 }
 
 type Kafka interface {
-	Produce(ctx context.Context, message, topic string) error
+	Produce(ctx context.Context, message []byte, topic string) error
 }
 type Order struct {
 	log      slog.Logger
