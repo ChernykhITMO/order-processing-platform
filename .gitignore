@@ -5,3 +5,4 @@ build/
 orders/.env
 .env
 payments/.env
+notifications/.env
