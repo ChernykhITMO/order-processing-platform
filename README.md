@@ -24,10 +24,27 @@
 
 ## Конфигурация окружения
 
-Локально используем `.env` файлы (в гите они игнорируются).
+Локально используем один экземпляр Postgres и одного пользователя для всех сервисов, а базы разделяем по сервисам. Это самый простой и стабильный способ для демо-проекта.
 
 1) Скопируйте шаблоны:
    ```bash
    cp .env.example .env
    cp orders/.env.example orders/.env
+   cp payments/.env.example payments/.env
+   ```
 
+2) Первый запуск Postgres или смена учётных данных:
+   ```bash
+   docker compose -f docker-compose.yaml down -v
+   docker compose -f docker-compose.yaml up -d
+   ```
+
+3) Создание баз во всех сервисах:
+   ```bash
+   make db-create
+   ```
+
+4) Запуск миграций во всех сервисах:
+   ```bash
+   make migrate-up
+   ```

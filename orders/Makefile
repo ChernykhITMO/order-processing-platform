@@ -1,4 +1,4 @@
-DB_URL = postgres://orders_user:orders_pass@localhost:5436/orders_db?sslmode=disable
+DB_URL = postgres://postgres:postgres@localhost:5436/orders_db?sslmode=disable
 MIGRATIONS_DIR = ./migrations
 DB=orders_db
 run:

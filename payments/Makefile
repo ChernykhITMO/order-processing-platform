@@ -1,4 +1,4 @@
-DB_URL = postgres://payments_user:payments_pass@localhost:5436/payments_db?sslmode=disable
+DB_URL = postgres://postgres:postgres@localhost:5436/payments_db?sslmode=disable
 MIGRATIONS_DIR = ./migrations
 DB=payments_db
 
