@@ -86,7 +86,9 @@ func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, er
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 
 	var (
 		orderID   int64

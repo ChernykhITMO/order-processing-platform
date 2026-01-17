@@ -1,12 +1,17 @@
 package domain
 
-import (
-	"errors"
-)
+import "errors"
 
 var (
-	ErrInvalidOrderID   = errors.New("order id must be positive")
-	ErrInvalidUserID    = errors.New("user id must be positive")
+	ErrIsEmptyKey = errors.New("key is empty")
+
+	ErrInvalidOrderID = errors.New("order id must be positive")
+	ErrInvalidUserID  = errors.New("user id must be positive")
+
+	ErrInvalidStatus = errors.New("status must be succeeded or failed")
+
+	ErrNotFound = errors.New("object found")
+
 	ErrInvalidProductID = errors.New("product id must be positive")
 	ErrInvalidQuantity  = errors.New("quantity must be at least one")
 	ErrInvalidPrice     = errors.New("price must be positive")

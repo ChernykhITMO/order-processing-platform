@@ -52,16 +52,14 @@ func (h *Handler) HandleMessage(message []byte) error {
 		return fmt.Errorf("%s: persist payment: %w", op, err)
 	}
 
-	now := time.Now().UTC()
 	if input.OrderID%2 == 0 {
 		if err := h.storage.UpdatePaymentStatus(ctx, input.OrderID, statusSucceeded); err != nil {
 			return fmt.Errorf("%s: update payment status: %w", op, err)
 		}
-		event := dto.PaymentSucceeded{
+		event := dto.PaymentStatus{
 			OrderID:     input.OrderID,
 			UserID:      input.UserID,
-			TotalAmount: input.TotalAmount,
-			ProcessedAt: now,
+			OrderStatus: statusSucceeded,
 		}
 		payload, err := json.Marshal(&event)
 		if err != nil {
@@ -76,12 +74,10 @@ func (h *Handler) HandleMessage(message []byte) error {
 	if err := h.storage.UpdatePaymentStatus(ctx, input.OrderID, statusFailed); err != nil {
 		return fmt.Errorf("%s: update payment status: %w", op, err)
 	}
-	event := dto.PaymentFailed{
+	event := dto.PaymentStatus{
 		OrderID:     input.OrderID,
 		UserID:      input.UserID,
-		TotalAmount: input.TotalAmount,
-		Reason:      "stub payment failure",
-		ProcessedAt: now,
+		OrderStatus: statusFailed,
 	}
 	payload, err := json.Marshal(&event)
 	if err != nil {

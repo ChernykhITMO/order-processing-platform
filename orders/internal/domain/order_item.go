@@ -37,7 +37,7 @@ func (o *OrderItem) validate() error {
 	}
 
 	if o.Price <= 0 {
-		return fmt.Errorf("%s: %w", op, ErrInvalidPrce)
+		return fmt.Errorf("%s: %w", op, ErrInvalidPrice)
 	}
 
 	return nil
