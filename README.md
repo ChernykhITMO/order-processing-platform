@@ -20,7 +20,7 @@
 
 ## Архитектура
 
-![architecture](docs/architecture.png)
+![architecture](docs/order-schema.png)
 
 ## Конфигурация окружения
 
