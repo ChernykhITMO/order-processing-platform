@@ -6,7 +6,7 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,10 +14,10 @@ import (
 
 type gRPCServer struct {
 	ordersv1.UnimplementedOrdersServiceServer
-	usecase *usecase.Order
+	usecase *services.Order
 }
 
-func NewServer(uc *usecase.Order) *gRPCServer {
+func NewServer(uc *services.Order) *gRPCServer {
 	return &gRPCServer{
 		usecase: uc,
 	}

@@ -26,7 +26,7 @@ type Consumer struct {
 }
 
 func NewConsumer(handler Handler, address []string, topic, consumerGroup string, log *slog.Logger) (*Consumer, error) {
-	const op = "kafka.Consumer.New"
+	const op = "kafka_produce.Consumer.New"
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":  strings.Join(address, ","),
 		"group.id":           consumerGroup,
@@ -47,7 +47,7 @@ func NewConsumer(handler Handler, address []string, topic, consumerGroup string,
 }
 
 func (c *Consumer) Start(ctx context.Context) {
-	const op = "kafka.Start"
+	const op = "kafka_produce.Start"
 	c.log.Info("consumer started", slog.String("op", op), slog.String("topic", c.topic), slog.String("group", c.group))
 
 	for {

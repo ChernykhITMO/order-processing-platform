@@ -7,9 +7,9 @@ import (
 	"os"
 
 	gw "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/grpc"
-	k "github.com/ChernykhITMO/order-processing-platform/orders/internal/kafka"
+	k "github.com/ChernykhITMO/order-processing-platform/orders/internal/kafka_produce"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/usecase"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -35,11 +35,11 @@ func main() {
 
 	p, err := k.NewProducer(address)
 	if err != nil {
-		log.Fatalf("kafka: %v", err)
+		log.Fatalf("kafka_produce: %v", err)
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	uc := usecase.New(logger, storage, p)
+	uc := services.New(logger, storage, p)
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {

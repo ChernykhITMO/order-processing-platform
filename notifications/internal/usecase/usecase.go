@@ -26,7 +26,7 @@ func New(storage Redis) *Notification {
 }
 
 func (n *Notification) SaveNotification(ctx context.Context, input dto.SaveInput) error {
-	const op = "usecase.Save"
+	const op = "services.Save"
 
 	if err := validateInput(input); err != nil {
 		return fmt.Errorf("%s: validated %w", op, err)
@@ -42,7 +42,7 @@ func (n *Notification) SaveNotification(ctx context.Context, input dto.SaveInput
 }
 
 func (n *Notification) GetNotification(ctx context.Context, input dto.GetInput) (dto.GetOutput, error) {
-	const op = "usecase.Get"
+	const op = "services.Get"
 	var output dto.GetOutput
 
 	if input.Key == "" {

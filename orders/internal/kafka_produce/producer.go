@@ -1,4 +1,4 @@
-package kafka
+package kafka_produce
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type Producer struct {
 }
 
 func NewProducer(address []string) (*Producer, error) {
-	const op = "kafka.NewProducer"
+	const op = "kafka_produce.NewProducer"
 	conf := &kafka.ConfigMap{
 		"bootstrap.servers": strings.Join(address, ","),
 	}
@@ -29,7 +29,7 @@ func NewProducer(address []string) (*Producer, error) {
 }
 
 func (p *Producer) Produce(ctx context.Context, message []byte, topic string) error {
-	const op = "kafka.Produce"
+	const op = "kafka_produce.Produce"
 	kafkaMsg := &kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,

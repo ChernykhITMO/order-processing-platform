@@ -23,7 +23,7 @@ type Consumer struct {
 }
 
 func NewConsumer(address []string, handler Handler, topic string, sessionTimeout time.Duration, log *slog.Logger) (*Consumer, error) {
-	const op = "kafka.Consumer.New"
+	const op = "kafka_produce.Consumer.New"
 	sessionTimeoutMs := int(sessionTimeout.Milliseconds())
 	heartbeatIntervalMs := int((sessionTimeout / 3).Milliseconds())
 	if sessionTimeoutMs < 1 {
@@ -33,11 +33,11 @@ func NewConsumer(address []string, handler Handler, topic string, sessionTimeout
 		heartbeatIntervalMs = 1
 	}
 	cfg := &kafka.ConfigMap{
-		"bootstrap.servers":  strings.Join(address, ","),
-		"session.timeout.ms": sessionTimeoutMs,
+		"bootstrap.servers":     strings.Join(address, ","),
+		"session.timeout.ms":    sessionTimeoutMs,
 		"heartbeat.interval.ms": heartbeatIntervalMs,
-		"group.id":           "my-group",
-		"auto.offset.reset":  "earliest",
+		"group.id":              "my-group",
+		"auto.offset.reset":     "earliest",
 	}
 
 	c, err := kafka.NewConsumer(cfg)
@@ -53,7 +53,7 @@ func NewConsumer(address []string, handler Handler, topic string, sessionTimeout
 }
 
 func (c *Consumer) Start(ctx context.Context) {
-	const op = "kafka.Consumer.Start"
+	const op = "kafka_produce.Consumer.Start"
 	c.log.Info("consumer started", slog.String("op", op), slog.String("topic", c.topic))
 
 	for {

@@ -1,4 +1,4 @@
-package usecase
+package services
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func (o *Order) GetOrder(ctx context.Context, input dto.GetOrderInput) (dto.GetOrderOutput, error) {
-	const op = "usecase.Order.GetOrder"
+	const op = "services.Order.GetOrder"
 
 	var output dto.GetOrderOutput
 
