@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +33,7 @@ func (s *Storage) GetNewEvent(ctx context.Context) (events.OrderCreated, int64, 
 		WHERE id = (
 			SELECT id
 			FROM events
-			WHERE sent_at IS NULL AND locked_at IS NULL
+			WHERE sent_at IS NULL AND (locked_at IS NULL OR locked_at < now() - interval '1 minutes')
 			ORDER BY created_at
 			FOR UPDATE SKIP LOCKED
 			LIMIT 1
@@ -40,6 +42,9 @@ func (s *Storage) GetNewEvent(ctx context.Context) (events.OrderCreated, int64, 
 	`
 
 	if err := tx.QueryRowContext(ctx, query, time.Now()).Scan(&payload, &eventID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return events.OrderCreated{}, 0, nil
+		}
 		return createdOrder, eventID, fmt.Errorf("%s: %w", op, err)
 	}
 

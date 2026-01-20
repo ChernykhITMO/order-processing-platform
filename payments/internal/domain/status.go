@@ -10,6 +10,8 @@ const (
 	StatusInventoryPending string = "StatusInventoryPending"
 	StatusCompleted        string = "StatusCompleted"
 	StatusCanceled         string = "StatusCanceled"
+	StatusSucceeded        string = "StatusSucceeded"
+	StatusFailed           string = "StatusFailed"
 )
 
 func StatusFromDB(status string) string {

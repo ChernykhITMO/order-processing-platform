@@ -68,6 +68,7 @@ func (c *Consumer) Start(ctx context.Context) {
 			c.log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
 			break
 		}
+
 		if kafkaMsg == nil {
 			continue
 		}

@@ -1,4 +1,4 @@
-package dto
+package events
 
 type PaymentStatus struct {
 	OrderID     int64  `json:"order_id"`

@@ -46,6 +46,12 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 			}
 
 			event, eventID, err := s.storage.GetNewEvent(ctx)
+			event.EventID = eventID
+			if event.EventID == 0 {
+				log.Error("no events")
+				continue
+			}
+
 			if err != nil {
 				log.Error("failed to get new event", slog.String("error", err.Error()))
 				continue

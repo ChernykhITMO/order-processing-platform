@@ -7,6 +7,7 @@ import (
 )
 
 type OrderCreated struct {
+	EventID     int64        `json:"event_id"`
 	OrderID     domain.ID    `json:"order_id"`
 	UserID      domain.ID    `json:"user_id"`
 	TotalAmount domain.Money `json:"total_amount"`

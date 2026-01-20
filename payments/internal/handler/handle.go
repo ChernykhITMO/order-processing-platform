@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/dto"
 )
 
@@ -16,11 +16,6 @@ const (
 	statusSucceeded = "succeeded"
 	statusFailed    = "failed"
 )
-
-type Storage interface {
-	UpsertPayment(ctx context.Context, orderID, userID, totalAmount int64, status string) error
-	UpdatePaymentStatus(ctx context.Context, orderID int64, status string) error
-}
 
 type Producer interface {
 	Produce(ctx context.Context, message []byte, topic string) error
@@ -39,9 +34,13 @@ func NewHandler(storage Storage, producer Producer, topic string, log *slog.Logg
 
 func (h *Handler) HandleMessage(message []byte) error {
 	const op = "handler.HandleMessage"
-	h.log.Info("handler started", slog.String("op", op))
+	log := h.log.With(slog.String("op", op))
+
+	log.Info("handler started", slog.String("op", op))
+
 	var input dto.OrderCreated
 	if err := json.Unmarshal(message, &input); err != nil {
+		log.Error("decode message", slog.String("error", err.Error()))
 		return fmt.Errorf("%s: decode message: %w", op, err)
 	}
 
@@ -56,7 +55,7 @@ func (h *Handler) HandleMessage(message []byte) error {
 		if err := h.storage.UpdatePaymentStatus(ctx, input.OrderID, statusSucceeded); err != nil {
 			return fmt.Errorf("%s: update payment status: %w", op, err)
 		}
-		event := dto.PaymentStatus{
+		event := events.PaymentStatus{
 			OrderID:     input.OrderID,
 			UserID:      input.UserID,
 			OrderStatus: statusSucceeded,
@@ -74,7 +73,7 @@ func (h *Handler) HandleMessage(message []byte) error {
 	if err := h.storage.UpdatePaymentStatus(ctx, input.OrderID, statusFailed); err != nil {
 		return fmt.Errorf("%s: update payment status: %w", op, err)
 	}
-	event := dto.PaymentStatus{
+	event := events.PaymentStatus{
 		OrderID:     input.OrderID,
 		UserID:      input.UserID,
 		OrderStatus: statusFailed,
@@ -87,6 +86,10 @@ func (h *Handler) HandleMessage(message []byte) error {
 		return fmt.Errorf("%s: produce failed event: %w", op, err)
 	}
 
-	log.Printf("%s: order_id=%d status=%s", op, input.OrderID, statusFailed)
+	_, err := h.storage.TryMarkProcessed(ctx, input.EventID)
+	if err != nil {
+		log.Error("marking event", slog.String("error", err.Error()))
+		return fmt.Errorf("%s: mark event: %w", op, err)
+	}
 	return nil
 }
