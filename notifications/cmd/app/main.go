@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/config"
-	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/handler"
+	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/controller"
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/kafka_consume"
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/usecase"
 	redis_storage "github.com/ChernykhITMO/order-processing-platform/notifications/storage/redis"
@@ -19,8 +19,7 @@ import (
 
 const (
 	topicStatus    = "status-topic"
-	envLocal       = "local"
-	envDev         = "dev"
+	env            = "env"
 	sessionTimeout = 30 * time.Second
 )
 
@@ -36,9 +35,9 @@ func main() {
 
 	storage := redis_storage.New(cfg)
 	uc := usecase.New(storage)
-	handler := handler.NewHandler(uc, logger)
+	sender := controller.NewSender(uc, logger)
 
-	consumer, err := kafka_consume.NewConsumer(address, handler, topicStatus, sessionTimeout, logger)
+	consumer, err := kafka_consume.NewConsumer(address, sender, topicStatus, sessionTimeout, logger)
 	if err != nil {
 		log.Fatal(err)
 	}

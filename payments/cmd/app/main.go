@@ -9,9 +9,10 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/handler"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/controller"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_consume"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
 	"github.com/joho/godotenv"
 )
@@ -21,6 +22,8 @@ var address = []string{"localhost:9092"}
 const (
 	topicOrder  = "order-topic"
 	topicStatus = "status-topic"
+
+	eventType = "event-status"
 
 	envLocal = "local"
 	envDev   = "dev"
@@ -48,8 +51,9 @@ func main() {
 	logger := setupLogger(envLocal)
 	logger.Info("service starting")
 
-	h := handler.NewHandler(storage, p, topicStatus, logger)
-	c, err := kafka_consume.NewConsumer(h, address, topicOrder, "my-group", logger)
+	service := services.New(storage, logger, topicStatus, eventType)
+	ctrl := controller.NewController(*service, storage, p, topicStatus, logger)
+	c, err := kafka_consume.NewConsumer(ctrl, address, topicOrder, "my-group", logger)
 	if err != nil {
 		log.Fatal(err)
 	}

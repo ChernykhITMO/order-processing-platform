@@ -1,4 +1,4 @@
-package handler
+package controller
 
 import (
 	"context"
@@ -12,21 +12,21 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/usecase"
 )
 
-type Handler struct {
+type Sender struct {
 	uc  *usecase.Notification
 	log *slog.Logger
 }
 
-func NewHandler(uc *usecase.Notification, log *slog.Logger) *Handler {
-	return &Handler{
+func NewSender(uc *usecase.Notification, log *slog.Logger) *Sender {
+	return &Sender{
 		uc:  uc,
 		log: log,
 	}
 }
 
-func (h *Handler) HandleMessage(message []byte) error {
-	const op = "handler.HandleMessage"
-	h.log.Info("handler started", slog.String("op", op))
+func (h *Sender) SendMessage(message []byte) error {
+	const op = "controller.SendMessage"
+	h.log.Info("controller started", slog.String("op", op))
 
 	var payment dto.Payment
 

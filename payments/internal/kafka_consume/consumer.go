@@ -19,13 +19,13 @@ type Handler interface {
 
 type Consumer struct {
 	consumer *kafka.Consumer
-	handler  Handler
+	sender   Handler
 	log      *slog.Logger
 	topic    string
 	group    string
 }
 
-func NewConsumer(handler Handler, address []string, topic, consumerGroup string, log *slog.Logger) (*Consumer, error) {
+func NewConsumer(sender Handler, address []string, topic, consumerGroup string, log *slog.Logger) (*Consumer, error) {
 	const op = "kafka_produce.Consumer.New"
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":  strings.Join(address, ","),
@@ -43,7 +43,7 @@ func NewConsumer(handler Handler, address []string, topic, consumerGroup string,
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &Consumer{consumer: c, handler: handler, log: log, topic: topic, group: consumerGroup}, nil
+	return &Consumer{consumer: c, sender: sender, log: log, topic: topic, group: consumerGroup}, nil
 }
 
 func (c *Consumer) Start(ctx context.Context) {
@@ -79,7 +79,7 @@ func (c *Consumer) Start(ctx context.Context) {
 			slog.Int64("offset", int64(kafkaMsg.TopicPartition.Offset)),
 		)
 
-		if err := c.handler.HandleMessage(kafkaMsg.Value); err != nil {
+		if err := c.sender.HandleMessage(kafkaMsg.Value); err != nil {
 			l.Error("handle message failed", slog.String("op", op), slog.Any("err", err))
 			continue
 		}

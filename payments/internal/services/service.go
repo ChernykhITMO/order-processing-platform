@@ -17,9 +17,19 @@ const (
 )
 
 type Service struct {
-	storage ports.Storage
-	topic   string
-	log     *slog.Logger
+	storage   ports.Storage
+	log       *slog.Logger
+	topic     string
+	eventType string
+}
+
+func New(storage ports.Storage, log *slog.Logger, topic, eventType string) *Service {
+	return &Service{
+		storage:   storage,
+		log:       log,
+		topic:     topic,
+		eventType: eventType,
+	}
 }
 
 func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated) error {

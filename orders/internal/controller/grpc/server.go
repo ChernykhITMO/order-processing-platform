@@ -1,4 +1,4 @@
-package grpc
+package api
 
 import (
 	"context"
@@ -8,22 +8,22 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type gRPCServer struct {
+type serverAPI struct {
 	ordersv1.UnimplementedOrdersServiceServer
-	usecase *services.Order
+	order *services.Order
 }
 
-func NewServer(uc *services.Order) *gRPCServer {
-	return &gRPCServer{
-		usecase: uc,
-	}
+func Register(gRPC *grpc.Server, order *services.Order) {
+	srvAPI := &serverAPI{order: order}
+	ordersv1.RegisterOrdersServiceServer(gRPC, srvAPI)
 }
 
-func (g *gRPCServer) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRequest) (*ordersv1.CreateOrderResponse, error) {
+func (s *serverAPI) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRequest) (*ordersv1.CreateOrderResponse, error) {
 	const op = "server.CreateOrder"
 	var input dto.CreateOrderInput
 
@@ -38,7 +38,7 @@ func (g *gRPCServer) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderR
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	output, err := g.usecase.CreateOrder(ctx, input)
+	output, err := s.order.CreateOrder(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -46,10 +46,10 @@ func (g *gRPCServer) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderR
 	return &ordersv1.CreateOrderResponse{OrderId: output.ID}, nil
 }
 
-func (g *gRPCServer) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest) (*ordersv1.GetOrderResponse, error) {
+func (s *serverAPI) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest) (*ordersv1.GetOrderResponse, error) {
 	const op = "server.GetOrder"
 	input := dto.GetOrderInput{ID: req.OrderId}
-	output, err := g.usecase.GetOrder(ctx, input)
+	output, err := s.order.GetOrder(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -59,9 +59,9 @@ func (g *gRPCServer) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest
 	}, nil
 
 }
-func (g *gRPCServer) ListOrders(ctx context.Context, req *ordersv1.ListOrdersRequest) (*ordersv1.ListOrdersResponse, error) {
+func (s *serverAPI) ListOrders(ctx context.Context, req *ordersv1.ListOrdersRequest) (*ordersv1.ListOrdersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOrders not implemented")
 }
-func (g *gRPCServer) CancelOrder(ctx context.Context, req *ordersv1.CancelOrderRequest) (*ordersv1.CancelOrderResponse, error) {
+func (s *serverAPI) CancelOrder(ctx context.Context, req *ordersv1.CancelOrderRequest) (*ordersv1.CancelOrderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelOrder not implemented")
 }

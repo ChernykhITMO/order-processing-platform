@@ -2,6 +2,7 @@ package event_sender
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -43,10 +44,34 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 				log.Info("stopping event processing")
 				return
 			case <-ticker.C:
-				//
 			}
 
-			s.producer.Produce(ctx)
+			event, err := s.storage.GetNewEvent(ctx)
+			if err != nil {
+				log.Error("fetch event", slog.String("error", err.Error()))
+				continue
+			}
+			if event.EventID == 0 {
+				continue
+			}
+
+			payload, err := json.Marshal(&event)
+			if err != nil {
+				log.Error("encode event", slog.String("error", err.Error()))
+				continue
+			}
+
+			if err := s.producer.Produce(ctx, payload, s.topic); err != nil {
+				log.Error("produce event", slog.String("error", err.Error()))
+				continue
+			}
+
+			if err := s.storage.MarkSent(ctx, event.EventID); err != nil {
+				log.Error("mark sent", slog.String("error", err.Error()))
+				continue
+			}
 		}
 	}()
+
+	return nil
 }

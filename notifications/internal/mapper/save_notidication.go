@@ -16,7 +16,7 @@ import (
 func MapToInput(payment dto.Payment) dto.SaveInput {
 	var output dto.SaveInput
 
-	output.Key = strconv.FormatInt(output.OrderID, 10)
+	output.Key = strconv.FormatInt(payment.OrderID, 10)
 	output.OrderID = payment.OrderID
 	output.UserID = payment.UserID
 	output.Status = payment.OrderStatus
