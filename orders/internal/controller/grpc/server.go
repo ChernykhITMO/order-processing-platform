@@ -9,8 +9,6 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type serverAPI struct {
@@ -58,10 +56,4 @@ func (s *serverAPI) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest)
 		Order: mapper.MapToProto(output.Order),
 	}, nil
 
-}
-func (s *serverAPI) ListOrders(ctx context.Context, req *ordersv1.ListOrdersRequest) (*ordersv1.ListOrdersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListOrders not implemented")
-}
-func (s *serverAPI) CancelOrder(ctx context.Context, req *ordersv1.CancelOrderRequest) (*ordersv1.CancelOrderResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CancelOrder not implemented")
 }

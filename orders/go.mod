@@ -3,7 +3,8 @@ module github.com/ChernykhITMO/order-processing-platform/orders
 go 1.25.1
 
 require (
-	github.com/ChernykhITMO/order-processing-proto v0.0.1
+	github.com/ChernykhITMO/order-processing-proto v0.0.2
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.78.0
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/confluentinc/confluent-kafka-go v1.9.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
