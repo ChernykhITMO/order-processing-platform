@@ -45,6 +45,7 @@ func main() {
 		Timeout:        getEnvDuration("REDIS_TIMEOUT", 0),
 		KafkaBrokers:   kafkaBrokers,
 		TopicStatus:    mustGetEnv("KAFKA_TOPIC_STATUS"),
+		ConsumerGroup:  mustGetEnv("KAFKA_CONSUMER_GROUP"),
 		SessionTimeout: mustGetEnvDuration("SESSION_TIMEOUT"),
 	}
 
@@ -56,9 +57,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	go func() {
-		application.MustRun(ctx)
-	}()
+	application.MustRun(ctx)
 }
 
 func setupLogger(env string) *slog.Logger {

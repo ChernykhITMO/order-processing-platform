@@ -26,7 +26,7 @@ func New(log *slog.Logger, cfg config.Config) (*App, error) {
 	uc := usecase.New(storage)
 	sender := controller.NewSender(uc, log)
 
-	consumer, err := kafka_consume.NewConsumer(cfg.KafkaBrokers, sender, cfg.TopicStatus, cfg.SessionTimeout, log)
+	consumer, err := kafka_consume.NewConsumer(cfg.KafkaBrokers, sender, cfg.TopicStatus, cfg.ConsumerGroup, cfg.SessionTimeout, log)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

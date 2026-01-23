@@ -5,19 +5,25 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/controller"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_consume"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services/event_sender"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
 )
 
 type App struct {
-	log      *slog.Logger
-	consumer *kafka_consume.Consumer
-	producer *kafka.Producer
+	log          *slog.Logger
+	consumer     *kafka_consume.Consumer
+	producer     *kafka.Producer
+	sender       *event_sender.Sender
+	senderPeriod time.Duration
+	storage      ports.Storage
 }
 
 func New(log *slog.Logger, cfg config.Config) (*App, error) {
@@ -40,10 +46,15 @@ func New(log *slog.Logger, cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
+	sender := event_sender.New(storage, producer, log, cfg.TopicStatus)
+
 	return &App{
-		log:      log,
-		consumer: consumer,
-		producer: producer,
+		log:          log,
+		consumer:     consumer,
+		producer:     producer,
+		sender:       sender,
+		senderPeriod: cfg.SenderPeriod,
+		storage:      storage,
 	}, nil
 }
 
@@ -55,11 +66,15 @@ func (a *App) MustRun(ctx context.Context) {
 
 func (a *App) run(ctx context.Context) error {
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		a.consumer.Start(ctx)
-	}()
+	wg.Add(2)
+
+	go func() { defer wg.Done(); a.consumer.Start(ctx) }()
+
+	period := a.senderPeriod
+	if period <= 0 {
+		period = time.Second
+	}
+	go func() { defer wg.Done(); _ = a.sender.StartProcessEvents(ctx, period) }()
 
 	<-ctx.Done()
 
@@ -68,6 +83,13 @@ func (a *App) run(ctx context.Context) error {
 	}
 
 	a.producer.Close()
+	if a.storage != nil {
+		_ = a.storage.Close()
+	}
 	wg.Wait()
 	return nil
+}
+
+func (a *App) Stop() {
+	_ = a.storage.Close()
 }

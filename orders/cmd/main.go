@@ -53,6 +53,7 @@ func main() {
 
 	<-stop
 
+	cancel()
 	application.Stop()
 	log.Info("Gracefully stopped")
 }

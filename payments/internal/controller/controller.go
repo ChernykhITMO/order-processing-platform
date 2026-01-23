@@ -12,12 +12,6 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
 )
 
-const (
-	statusPending   = "pending"
-	statusSucceeded = "succeeded"
-	statusFailed    = "failed"
-)
-
 type Producer interface {
 	Produce(ctx context.Context, message []byte, topic string) error
 }

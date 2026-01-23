@@ -24,8 +24,8 @@ func NewSender(uc *usecase.Notification, log *slog.Logger) *Sender {
 	}
 }
 
-func (h *Sender) SendMessage(message []byte) error {
-	const op = "controller.SendMessage"
+func (h *Sender) HandleMessage(message []byte) error {
+	const op = "controller.HandleMessage"
 	h.log.Info("controller started", slog.String("op", op))
 
 	var payment dto.Payment

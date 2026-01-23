@@ -12,10 +12,6 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
 )
 
-const (
-	eventType string = "payment_status"
-)
-
 type Service struct {
 	storage   ports.Storage
 	log       *slog.Logger
@@ -67,7 +63,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 				return fmt.Errorf("%s: encode success event: %w", op, err)
 			}
 
-			if err := tx.SaveEvent(ctx, eventType, payload, input.OrderID); err != nil {
+			if err := tx.SaveEvent(ctx, s.eventType, payload, input.OrderID); err != nil {
 				return fmt.Errorf("%s: kafka produce: %w", op, err)
 			}
 		} else {
@@ -84,7 +80,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 				return fmt.Errorf("%s: encode failed event: %w", op, err)
 			}
 
-			if err := tx.SaveEvent(ctx, eventType, payload, input.OrderID); err != nil {
+			if err := tx.SaveEvent(ctx, s.eventType, payload, input.OrderID); err != nil {
 				return fmt.Errorf("%s: kafka produce: %w", op, err)
 			}
 		}

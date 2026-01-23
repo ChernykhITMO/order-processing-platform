@@ -17,6 +17,7 @@ type Postgres interface {
 	GetOrderByID(ctx context.Context, id int64) (*domain.Order, error)
 	GetNewEvent(ctx context.Context) (events.OrderCreated, int64, error)
 	MarkSent(ctx context.Context, eventID int64) error
+	Close() error
 }
 
 type Order struct {

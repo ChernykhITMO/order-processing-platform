@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type Config struct {
 	DBDSN         string
 	KafkaBrokers  []string
@@ -7,4 +9,5 @@ type Config struct {
 	TopicStatus   string
 	EventType     string
 	ConsumerGroup string
+	SenderPeriod  time.Duration
 }

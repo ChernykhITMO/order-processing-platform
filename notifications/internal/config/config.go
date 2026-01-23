@@ -12,5 +12,6 @@ type Config struct {
 	Timeout        time.Duration `yaml:"timeout"`
 	KafkaBrokers   []string
 	TopicStatus    string
+	ConsumerGroup  string
 	SessionTimeout time.Duration
 }

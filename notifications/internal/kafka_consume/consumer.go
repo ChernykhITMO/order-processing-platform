@@ -22,7 +22,7 @@ type Consumer struct {
 	log            *slog.Logger
 }
 
-func NewConsumer(address []string, handler Handler, topic string, sessionTimeout time.Duration, log *slog.Logger) (*Consumer, error) {
+func NewConsumer(address []string, handler Handler, topic, consumerGroup string, sessionTimeout time.Duration, log *slog.Logger) (*Consumer, error) {
 	const op = "kafka_produce.Consumer.New"
 	sessionTimeoutMs := int(sessionTimeout.Milliseconds())
 	heartbeatIntervalMs := int((sessionTimeout / 3).Milliseconds())
@@ -36,7 +36,7 @@ func NewConsumer(address []string, handler Handler, topic string, sessionTimeout
 		"bootstrap.servers":     strings.Join(address, ","),
 		"session.timeout.ms":    sessionTimeoutMs,
 		"heartbeat.interval.ms": heartbeatIntervalMs,
-		"group.id":              "my-group",
+		"group.id":              consumerGroup,
 		"auto.offset.reset":     "earliest",
 	}
 

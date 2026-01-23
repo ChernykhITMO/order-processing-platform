@@ -18,6 +18,7 @@ type App struct {
 	KafkaProducer *kafka_produce.Producer
 	KafkaTopic    string
 	KafkaPeriod   time.Duration
+	storage       *postgres.Storage
 }
 
 func New(
@@ -54,6 +55,7 @@ func New(
 		KafkaProducer: producer,
 		KafkaTopic:    kafkaTopic,
 		KafkaPeriod:   kafkaPeriod,
+		storage:       storage,
 	}
 }
 
@@ -72,5 +74,8 @@ func (a *App) Stop() {
 	a.GRPCSrv.Stop()
 	if a.KafkaProducer != nil {
 		a.KafkaProducer.Close()
+	}
+	if a.storage != nil {
+		_ = a.storage.Close()
 	}
 }

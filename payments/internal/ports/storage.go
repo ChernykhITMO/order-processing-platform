@@ -17,4 +17,5 @@ type Storage interface {
 	RunInTx(ctx context.Context, fn func(tx StorageTx) error) error
 	GetNewEvent(ctx context.Context) (events.PaymentStatus, error)
 	MarkSent(ctx context.Context, id int64) error
+	Close() error
 }
