@@ -32,9 +32,6 @@ func (s *serverAPI) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRe
 
 	input.UserID = req.UserId
 	input.Items = items
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
 
 	output, err := s.order.CreateOrder(ctx, input)
 	if err != nil {

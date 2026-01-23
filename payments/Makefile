@@ -3,7 +3,7 @@ MIGRATIONS_DIR = ./migrations
 DB=payments_db
 
 run:
-	go run cmd/app/main.go
+	go run cmd/main.go
 
 migrate-up:
 	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
