@@ -3,15 +3,29 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/handlers"
-	"github.com/ChernykhITMO/order-processing-platform/protos/gen/ordersv1"
+	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	_ "github.com/ChernykhITMO/order-processing-platform/gateway/docs"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
+//	@title			Order Processing Platform API Gateway
+//	@version		1.0
+//	@description	API Gateway for Order Processing Platform
+
+// @host		localhost:8080
+// @BasePath	/
 func main() {
-	ordersAddr := "localhost:50051"
+	ordersAddr := os.Getenv("ORDERS_GRPC_ADDR")
+	if ordersAddr == "" {
+		panic("orders address is empty")
+	}
 
 	conn, err := grpc.NewClient(
 		ordersAddr,
@@ -26,12 +40,14 @@ func main() {
 	}()
 
 	gw := &handlers.Gateway{
-		Orders: ordersv1.NewOrdersServiceClient(conn),
+		Orders:         ordersv1.NewOrdersServiceClient(conn),
+		RequestTimeout: 2 * time.Second,
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/orders", gw.HandleOrders)
 	mux.HandleFunc("/orders/", gw.HandleOrderById)
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	srv := &http.Server{
 		Addr:    ":8080",

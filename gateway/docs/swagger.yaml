@@ -1,0 +1,102 @@
+basePath: /
+definitions:
+  dto.CreateOrderRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItem'
+        type: array
+      user_id:
+        type: integer
+    type: object
+  dto.CreateOrderResponse:
+    properties:
+      order_id:
+        type: integer
+    type: object
+  dto.GetOrderResponse:
+    properties:
+      order:
+        $ref: '#/definitions/dto.Order'
+    type: object
+  dto.Order:
+    properties:
+      created_at:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.OrderItem'
+        type: array
+      order_id:
+        type: integer
+      status:
+        type: string
+      total_amount:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.OrderItem:
+    properties:
+      price:
+        type: integer
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Gateway for Order Processing Platform
+  title: Order Processing Platform API Gateway
+  version: "1.0"
+paths:
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      parameters:
+      - description: Create order
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CreateOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Create order
+  /orders/{id}:
+    get:
+      description: Returns order details by id
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: Get order by id
+swagger: "2.0"

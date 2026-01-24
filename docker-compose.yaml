@@ -79,5 +79,16 @@ services:
     ports:
       - "8083:8083"
 
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    environment:
+      - ORDERS_GRPC_ADDR=orders-service:50051
+    depends_on:
+      - orders-service
+    ports:
+      - "8080:8080"
+
 volumes:
   orders_pgdata:
