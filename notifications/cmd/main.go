@@ -24,15 +24,16 @@ const (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("env not loaded")
-	}
+	_ = godotenv.Load()
 
 	kafkaBrokers := parseKafkaBrokers(mustGetEnv("KAFKA_BROKERS"))
 	if len(kafkaBrokers) == 0 {
 		log.Fatal("KAFKA_BROKERS is empty")
 	}
 
+	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
+		_ = os.Setenv(envKey, os.Getenv("ENV"))
+	}
 	logger := setupLogger(mustGetEnv(envKey))
 
 	cfg := config.Config{
@@ -43,6 +44,7 @@ func main() {
 		MaxRetries:     getEnvInt("REDIS_MAX_RETRIES", 0),
 		DialTimeout:    getEnvDuration("REDIS_DIAL_TIMEOUT", 0),
 		Timeout:        getEnvDuration("REDIS_TIMEOUT", 0),
+		TTL:            getEnvDuration("REDIS_TTL", 0),
 		KafkaBrokers:   kafkaBrokers,
 		TopicStatus:    mustGetEnv("KAFKA_TOPIC_STATUS"),
 		ConsumerGroup:  mustGetEnv("KAFKA_CONSUMER_GROUP"),

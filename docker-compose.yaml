@@ -14,16 +14,10 @@ services:
   redis:
     image: redis:latest
     container_name: redis_container
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REDIS_USER=${REDIS_USER}
-      - REDIS_USER_PASSWORD=${REDIS_USER_PASSWORD}
     ports:
       - "6379:6379"
     volumes:
       - ./redisdata:/data
-
-
   kafka:
     image: apache/kafka:latest
     hostname: kafka_produce
@@ -58,6 +52,32 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka_produce:29092
     depends_on: [kafka]
 
+  orders-service:
+    build:
+      context: ./orders
+    container_name: orders-service
+    env_file:
+      - ./orders/.env
+    ports:
+      - "8081:8081"
+
+  payments-service:
+    build:
+      context: ./payments
+    container_name: payment-service
+    env_file:
+      - ./payments/.env
+    ports:
+      - "8082:8082"
+
+  notifications-service:
+    build:
+      context: ./notifications
+    container_name: notifications-service
+    env_file:
+      - ./notifications/.env
+    ports:
+      - "8083:8083"
 
 volumes:
   orders_pgdata:

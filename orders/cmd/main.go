@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -26,8 +25,10 @@ const (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("env not loaded")
+	_ = godotenv.Load()
+
+	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
+		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
 
 	cfg := config.MustLoad(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)

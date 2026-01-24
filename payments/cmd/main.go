@@ -23,9 +23,7 @@ const (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("env not loaded")
-	}
+	_ = godotenv.Load()
 
 	dsn := os.Getenv("PAYMENTS_PG_DSN")
 	if dsn == "" {
@@ -37,6 +35,9 @@ func main() {
 		log.Fatal("KAFKA_BROKERS is empty")
 	}
 
+	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
+		_ = os.Setenv(envKey, os.Getenv("ENV"))
+	}
 	logger := setupLogger(mustGetEnv(envKey))
 	logger.Info("service starting")
 

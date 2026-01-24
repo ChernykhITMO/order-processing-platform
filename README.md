@@ -1,20 +1,16 @@
 # Order Processing Platform
-Система обработки заказов с gRPC-взаимодействием, событийной коммуникацией через Kafka, PostgreSQL и полноценным мониторингом в Prometheus + Grafana.
 
-Проект демонстрирует:
+Учебный микросервисный проект на Go: gRPC‑сервис заказов, HTTP‑gateway, событийное взаимодействие через Kafka, хранение в PostgreSQL и Redis. Проект построен как портфолио с акцентом на практики интеграции и устойчивости.
 
-- gRPC-взаимодействие между сервисами
-- Асинхронные события через Kafka (Transactional Outbox, idempotent consumers)
-- PostgreSQL: транзакции, индексы, логическое шардирование / partitioning
-- Observability: метрики, алерты и дашборды в Grafana
-
-**Доменные события в Kafka**
-- OrderCreated: “заказ создан” (order_id, user_id, сумма, items, timestamp)
-- PaymentSucceeded: “оплата прошла” (order_id, payment_id, сумма, timestamp)
-- PaymentFailed: “оплата не прошла” (order_id, причина)
-- InventoryReserved: “товар зарезервирован” (order_id, sku->qty)
-- InventoryReservationFailed: “не смогли зарезервировать”
-- OrderCompleted / OrderCanceled: “заказ завершён/отменён”
+## Что реализовано
+- gRPC‑API для создания и получения заказа.
+- HTTP‑gateway, который проксирует REST → gRPC.
+- Событийный поток через Kafka:
+  - `order-topic` — создание заказа.
+  - `status-topic` — результат оплаты.
+- Outbox‑паттерн для надёжной публикации событий (orders, payments).
+- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`).
+- Redis‑хранилище уведомлений с TTL (настраивается через `REDIS_TTL`).
 
 [Protobuf contracts](https://github.com/ChernykhITMO/order-processing-proto)
 
@@ -22,29 +18,76 @@
 
 ![architecture](docs/order-schema.png)
 
-## Конфигурация окружения
+## Сервисы
 
-Локально используем один экземпляр Postgres и одного пользователя для всех сервисов, а базы разделяем по сервисам. Это самый простой и стабильный способ для демо-проекта.
+- **orders**  
+  gRPC‑сервис. Хранит заказы и позиции в PostgreSQL. Пишет событие `OrderCreated` в outbox‑таблицу и отправляет его в Kafka по расписанию.
 
-1) Скопируйте шаблоны:
-   ```bash
-   cp .env.example .env
-   cp orders/.env.example orders/.env
-   cp payments/.env.example payments/.env
-   ```
+- **payments**  
+  Kafka‑consumer: принимает `OrderCreated`, создаёт/обновляет оплату в PostgreSQL, пишет событие `PaymentStatus` в outbox и публикует в Kafka.
 
-2) Первый запуск Postgres или смена учётных данных:
-   ```bash
-   docker compose -f docker-compose.yaml down -v
-   docker compose -f docker-compose.yaml up -d
-   ```
+- **notifications**  
+  Kafka‑consumer: принимает `PaymentStatus` и сохраняет уведомления в Redis с TTL.
 
-3) Создание баз во всех сервисах:
-   ```bash
-   make db-create
-   ```
+- **gateway**  
+  HTTP‑сервер (REST → gRPC). Работает как внешний вход в систему. Подключается к `orders` по gRPC.
 
-4) Запуск миграций во всех сервисах:
-   ```bash
-   make migrate-up
-   ```
+## Технологии
+- Go, gRPC
+- PostgreSQL
+- Kafka (+ Kafka UI)
+- Redis
+- Docker Compose
+
+## Запуск локально (Docker)
+
+1) Скопируйте шаблоны окружения:
+```bash
+cp .env.example .env
+cp orders/.env.example orders/.env
+cp payments/.env.example payments/.env
+cp notifications/.env.example notifications/.env
+```
+
+2) Проверьте адреса сервисов в `.env`:
+- Postgres: `postgres:5432`
+- Kafka: `kafka_produce:29092`
+- Redis: `redis:6379`
+
+3) Поднимите инфраструктуру и сервисы:
+```bash
+docker compose -f docker-compose.yaml up -d --build
+```
+
+4) Создайте базы:
+```bash
+make db-create
+```
+
+5) Примените миграции (нужен установленный `migrate` CLI):
+```bash
+make migrate-up
+```
+
+Redis поднимается контейнером и не требует инициализации. TTL хранится в `notifications/.env` через `REDIS_TTL` (например `48h`).
+
+## HTTP Gateway
+
+Gateway запускается отдельно и подключается к `orders` по gRPC (по умолчанию `localhost:50051`).
+
+Запуск:
+```bash
+go run ./gateway/cmd
+```
+
+Примеры запросов:
+```bash
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":1,"items":[{"product_id":1,"quantity":2,"price":{"units":10,"nanos":0}}]}'
+
+curl http://localhost:8080/orders/1
+```
+
+## Примечания
+- Порт gRPC сервиса orders задаётся в `orders/.env` (`ORDERS_GRPC_ADDR`). Он должен совпадать с портом, который пробрасывается в `docker-compose.yaml`.

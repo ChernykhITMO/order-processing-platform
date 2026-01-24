@@ -10,6 +10,7 @@ type Config struct {
 	MaxRetries     int           `yaml:"max_retries"`
 	DialTimeout    time.Duration `yaml:"dial_timeout"`
 	Timeout        time.Duration `yaml:"timeout"`
+	TTL            time.Duration `yaml:"ttl"`
 	KafkaBrokers   []string
 	TopicStatus    string
 	ConsumerGroup  string

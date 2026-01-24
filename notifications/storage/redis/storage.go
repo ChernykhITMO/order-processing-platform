@@ -3,6 +3,7 @@ package redis_storage
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/domain"
@@ -12,6 +13,7 @@ import (
 
 type Storage struct {
 	client *redis.Client
+	ttl    time.Duration
 }
 
 func New(cfg config.Config) *Storage {
@@ -23,7 +25,7 @@ func New(cfg config.Config) *Storage {
 		MaxRetries:  cfg.MaxRetries,
 		DialTimeout: cfg.DialTimeout,
 	})
-	return &Storage{client: client}
+	return &Storage{client: client, ttl: cfg.TTL}
 }
 func (s *Storage) Ping(ctx context.Context) error {
 	return s.client.Ping(ctx).Err()
@@ -34,7 +36,11 @@ func (s *Storage) SaveNotification(ctx context.Context, key string, value events
 	if err != nil {
 		return err
 	}
-	return s.client.Set(ctx, key, payment, 0).Err()
+	expiration := s.ttl
+	if expiration <= 0 {
+		expiration = 0
+	}
+	return s.client.Set(ctx, key, payment, expiration).Err()
 }
 func (s *Storage) GetNotification(ctx context.Context, key string) (events.Payment, error) {
 	var payment events.Payment
