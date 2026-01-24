@@ -1,6 +1,6 @@
 module github.com/ChernykhITMO/order-processing-platform/notifications
 
-go 1.25.1
+go 1.22
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

@@ -1,6 +1,6 @@
 module github.com/ChernykhITMO/order-processing-platform/gateway
 
-go 1.25.1
+go 1.22
 
 require (
 	github.com/ChernykhITMO/order-processing-proto v0.0.2
