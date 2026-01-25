@@ -1,16 +1,15 @@
 # Order Processing Platform
 
-Учебный микросервисный проект на Go: gRPC‑сервис заказов, HTTP‑gateway, событийное взаимодействие через Kafka, хранение в PostgreSQL и Redis. Проект построен как портфолио с акцентом на практики интеграции и устойчивости.
-
+Учебный микросервисный проект на Go: gRPC‑сервис заказов, HTTP‑gateway, событийное взаимодействие через Kafka, хранение в PostgreSQL и Redis
 ## Что реализовано
-- gRPC‑API для создания и получения заказа.
-- HTTP‑gateway, который проксирует REST → gRPC.
+- gRPC‑API для создания и получения заказа
+- HTTP‑gateway, который проксирует REST → gRPC
 - Событийный поток через Kafka:
-  - `order-topic` — создание заказа.
-  - `status-topic` — результат оплаты.
-- Outbox‑паттерн для надёжной публикации событий (orders, payments).
-- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`).
-- Redis‑хранилище уведомлений с TTL (настраивается через `REDIS_TTL`).
+  - `order-topic` — создание заказа
+  - `status-topic` — результат оплаты
+- Outbox‑паттерн для надёжной публикации событий (orders, payments)
+- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`)
+- Redis‑хранилище уведомлений с TTL (настраивается через `REDIS_TTL`)
 
 [Protobuf contracts](https://github.com/ChernykhITMO/order-processing-proto)
 
@@ -21,16 +20,16 @@
 ## Сервисы
 
 - **orders**  
-  gRPC‑сервис. Хранит заказы и позиции в PostgreSQL. Пишет событие `OrderCreated` в outbox‑таблицу и отправляет его в Kafka по расписанию.
+  gRPC‑сервис. Хранит заказы и позиции в PostgreSQL. Пишет событие `OrderCreated` в outbox‑таблицу и отправляет его в Kafka по расписанию
 
 - **payments**  
-  Kafka‑consumer: принимает `OrderCreated`, создаёт/обновляет оплату в PostgreSQL, пишет событие `PaymentStatus` в outbox и публикует в Kafka.
+  Kafka‑consumer: принимает `OrderCreated`, создаёт/обновляет оплату в PostgreSQL, пишет событие `PaymentStatus` в outbox и публикует в Kafka
 
 - **notifications**  
-  Kafka‑consumer: принимает `PaymentStatus` и сохраняет уведомления в Redis с TTL.
+  Kafka‑consumer: принимает `PaymentStatus` и сохраняет уведомления в Redis с TTL
 
 - **gateway**  
-  HTTP‑сервер (REST → gRPC). Работает как внешний вход в систему. Подключается к `orders` по gRPC.
+  HTTP‑сервер (REST → gRPC). Работает как внешний вход в систему. Подключается к `orders` по gRPC
 
 ## Технологии
 - Go, gRPC
