@@ -8,12 +8,6 @@ CREATE TABLE IF NOT EXISTS payments
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS processed_events
-(
-    event_id     BIGINT PRIMARY KEY,
-    processed_at TIMESTAMPTZ DEFAULT NULL
-);
-
 CREATE TABLE IF NOT EXISTS events
 (
     id           SERIAL PRIMARY KEY,

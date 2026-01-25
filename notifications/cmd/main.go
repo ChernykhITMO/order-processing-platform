@@ -34,7 +34,7 @@ func main() {
 	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
-	logger := setupLogger(mustGetEnv(envKey))
+	log := setupLogger(mustGetEnv(envKey))
 
 	cfg := config.Config{
 		Addr:           mustGetEnv("REDIS_ADDR"),
@@ -51,9 +51,17 @@ func main() {
 		SessionTimeout: mustGetEnvDuration("SESSION_TIMEOUT"),
 	}
 
-	application, err := app.New(logger, cfg)
+	log.With(
+		slog.String("redis_addr", cfg.Addr),
+		slog.String("kafka_topic", cfg.TopicStatus),
+		slog.String("kafka_consumer_group", cfg.ConsumerGroup),
+		slog.Duration("session_timeout", cfg.SessionTimeout),
+	).Info("starting application")
+
+	application, err := app.New(log, cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Error("application failed", slog.Any("err", err))
+		return
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

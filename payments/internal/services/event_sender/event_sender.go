@@ -36,42 +36,38 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 
 	ticker := time.NewTicker(handlePeriod)
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				ticker.Stop()
-				log.Info("stopping event processing")
-				return
-			case <-ticker.C:
-			}
-
-			event, err := s.storage.GetNewEvent(ctx)
-			if err != nil {
-				log.Error("fetch event", slog.String("error", err.Error()))
-				continue
-			}
-			if event.EventID == 0 {
-				continue
-			}
-
-			payload, err := json.Marshal(&event)
-			if err != nil {
-				log.Error("encode event", slog.String("error", err.Error()))
-				continue
-			}
-
-			if err := s.producer.Produce(ctx, payload, s.topic); err != nil {
-				log.Error("produce event", slog.String("error", err.Error()))
-				continue
-			}
-
-			if err := s.storage.MarkSent(ctx, event.EventID); err != nil {
-				log.Error("mark sent", slog.String("error", err.Error()))
-				continue
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			log.Info("stopping event processing")
+			return nil
+		case <-ticker.C:
 		}
-	}()
 
-	return nil
+		event, err := s.storage.GetNewEvent(ctx)
+		if err != nil {
+			log.Error("fetch event failed", slog.Any("err", err))
+			continue
+		}
+		if event.EventID == 0 {
+			continue
+		}
+
+		payload, err := json.Marshal(&event)
+		if err != nil {
+			log.Error("marshal event failed", slog.Any("err", err))
+			continue
+		}
+
+		if err := s.producer.Produce(ctx, payload, s.topic); err != nil {
+			log.Error("produce event failed", slog.Any("err", err))
+			continue
+		}
+
+		if err := s.storage.MarkSent(ctx, event.EventID); err != nil {
+			log.Error("mark sent failed", slog.Any("err", err))
+			continue
+		}
+	}
 }

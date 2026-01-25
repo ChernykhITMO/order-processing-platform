@@ -21,13 +21,13 @@ type Postgres interface {
 }
 
 type Order struct {
-	log      slog.Logger
+	log      *slog.Logger
 	postgres Postgres
 }
 
 func New(log *slog.Logger, postgres Postgres) *Order {
 	return &Order{
-		log:      *log,
+		log:      log,
 		postgres: postgres,
 	}
 }

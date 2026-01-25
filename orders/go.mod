@@ -1,6 +1,6 @@
 module github.com/ChernykhITMO/order-processing-platform/orders
 
-go 1.22
+go 1.25.1
 
 require (
 	github.com/ChernykhITMO/order-processing-proto v0.0.2

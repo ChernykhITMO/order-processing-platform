@@ -39,7 +39,7 @@ func New(log *slog.Logger, cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	service := services.New(storage, log, cfg.TopicStatus, cfg.EventType)
+	service := services.New(storage, log, cfg.EventType)
 	ctrl := controller.NewController(*service, storage, producer, cfg.TopicStatus, log)
 	consumer, err := kafka_consume.NewConsumer(ctrl, cfg.KafkaBrokers, cfg.TopicOrder, cfg.ConsumerGroup, log)
 	if err != nil {
@@ -65,6 +65,11 @@ func (a *App) MustRun(ctx context.Context) {
 }
 
 func (a *App) run(ctx context.Context) error {
+	const op = "app.run"
+
+	log := a.log.With(slog.String("op", op))
+
+	log.Info("starting application")
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -74,12 +79,17 @@ func (a *App) run(ctx context.Context) error {
 	if period <= 0 {
 		period = time.Second
 	}
-	go func() { defer wg.Done(); _ = a.sender.StartProcessEvents(ctx, period) }()
+
+	go func() {
+		defer wg.Done()
+		err := a.sender.StartProcessEvents(ctx, period)
+		log.Error("start process events failed", slog.Any("err", err))
+	}()
 
 	<-ctx.Done()
 
 	if err := a.consumer.Stop(); err != nil {
-		a.log.Error("consumer stopping", slog.Any("err", err))
+		log.Error("consumer stopping", slog.Any("err", err))
 	}
 
 	a.producer.Close()
@@ -91,5 +101,8 @@ func (a *App) run(ctx context.Context) error {
 }
 
 func (a *App) Stop() {
-	_ = a.storage.Close()
+	const op = "app.Stop"
+
+	a.log.With(slog.String("op", op)).
+		Info("stopping payments server")
 }

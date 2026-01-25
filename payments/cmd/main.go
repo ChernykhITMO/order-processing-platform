@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -38,10 +39,10 @@ func main() {
 	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
-	logger := setupLogger(mustGetEnv(envKey))
-	logger.Info("service starting")
+	log := setupLogger(mustGetEnv(envKey))
+	log.Info("service starting")
 
-	application, err := app.New(logger, config.Config{
+	application, err := app.New(log, config.Config{
 		DBDSN:         dsn,
 		KafkaBrokers:  kafkaBrokers,
 		TopicOrder:    mustGetEnv("KAFKA_TOPIC_ORDER"),
@@ -50,13 +51,20 @@ func main() {
 		ConsumerGroup: mustGetEnv("KAFKA_CONSUMER_GROUP"),
 		SenderPeriod:  mustGetEnvDuration("KAFKA_SENDER_PERIOD"),
 	})
+
+	log.Info("config",
+		slog.String("db", sanitizeDSN(dsn)),
+		slog.Any("brokers", kafkaBrokers),
+	)
+
 	if err != nil {
-		log.Fatal(err)
+		log.Error("failed to create application", slog.Any("err", err))
+		return
 	}
 	defer application.Stop()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	application.MustRun(ctx)
 }
@@ -115,4 +123,16 @@ func mustGetEnvDuration(key string) time.Duration {
 		log.Fatalf("%s is invalid duration: %v", key, err)
 	}
 	return parsed
+}
+
+func sanitizeDSN(dsn string) string {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return dsn
+	}
+	if u.User != nil {
+		user := u.User.Username()
+		u.User = url.User(user)
+	}
+	return u.String()
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,13 +33,15 @@ func main() {
 	}
 
 	cfg := config.MustLoad(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
-	if cfg == nil {
-		panic("config is not complete")
-	}
 
 	log := setupLogger(cfg.Env)
 
 	application := app.New(log, cfg.GRPC.Port, cfg.DB.DSN, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)
+
+	log.With(
+		slog.String("dsn", sanitizeDSN(cfg.DB.DSN)),
+		slog.String("kafka_topic", cfg.Kafka.Topic),
+	).Info("starting application")
 
 	go func() {
 		application.GRPCSrv.MustRun()
@@ -47,7 +50,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	application.StartEventSender(ctx)
+	go func() {
+		application.StartEventSender(ctx)
+	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
@@ -56,7 +61,7 @@ func main() {
 
 	cancel()
 	application.Stop()
-	log.Info("Gracefully stopped")
+	log.Info("gracefully stopped")
 }
 
 func setupLogger(env string) *slog.Logger {
@@ -78,4 +83,16 @@ func setupLogger(env string) *slog.Logger {
 	}
 
 	return log
+}
+
+func sanitizeDSN(dsn string) string {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return dsn
+	}
+	if u.User != nil {
+		user := u.User.Username()
+		u.User = url.User(user)
+	}
+	return u.String()
 }

@@ -17,8 +17,6 @@ func MapStatusToProto(status domain.Status) ordersv1.OrderStatus {
 		return ordersv1.OrderStatus_INVENTORY_PENDING
 	case "StatusCompleted":
 		return ordersv1.OrderStatus_COMPLETED
-	case "StatusCanceled":
-		return ordersv1.OrderStatus_CANCELED
 	}
 
 	return ordersv1.OrderStatus_UNSPECIFIED

@@ -53,24 +53,37 @@ services:
     depends_on: [kafka]
 
   orders-service:
+    platform: linux/amd64
     build:
       context: ./orders
     container_name: orders-service
     env_file:
       - ./orders/.env
+    depends_on:
+      postgres:
+        condition: service_started
+      migrate-orders:
+        condition: service_completed_successfully
     ports:
       - "8081:8081"
 
   payments-service:
+    platform: linux/amd64
     build:
       context: ./payments
     container_name: payment-service
     env_file:
       - ./payments/.env
+    depends_on:
+      postgres:
+        condition: service_started
+      migrate-payments:
+        condition: service_completed_successfully
     ports:
       - "8082:8082"
 
   notifications-service:
+    platform: linux/amd64
     build:
       context: ./notifications
     container_name: notifications-service
@@ -89,6 +102,22 @@ services:
       - orders-service
     ports:
       - "8080:8080"
+
+  migrate-orders:
+    image: migrate/migrate:4
+    volumes:
+      - ./orders/migrations:/migrations:ro
+    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/orders_db?sslmode=disable", "up"]
+    depends_on:
+      - postgres
+
+  migrate-payments:
+    image: migrate/migrate:4
+    volumes:
+      - ./payments/migrations:/migrations:ro
+    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/payments_db?sslmode=disable", "up"]
+    depends_on:
+      - postgres
 
 volumes:
   orders_pgdata:

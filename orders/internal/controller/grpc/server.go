@@ -23,6 +23,7 @@ func Register(gRPC *grpc.Server, order *services.Order) {
 
 func (s *serverAPI) CreateOrder(ctx context.Context, req *ordersv1.CreateOrderRequest) (*ordersv1.CreateOrderResponse, error) {
 	const op = "server.CreateOrder"
+
 	var input dto.CreateOrderInput
 
 	items, err := mapper.MapToCreateItems(req.Items)

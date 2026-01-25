@@ -15,21 +15,26 @@ import (
 type Service struct {
 	storage   ports.Storage
 	log       *slog.Logger
-	topic     string
 	eventType string
 }
 
-func New(storage ports.Storage, log *slog.Logger, topic, eventType string) *Service {
+func New(storage ports.Storage, log *slog.Logger, eventType string) *Service {
 	return &Service{
 		storage:   storage,
 		log:       log,
-		topic:     topic,
 		eventType: eventType,
 	}
 }
 
 func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated) error {
 	const op = "services.HandleOrderCreated"
+
+	log := s.log.With(
+		slog.String("op", op),
+		slog.Int64("order_id", input.OrderID),
+		slog.Int64("user_id", input.UserID),
+		slog.Int64("event_id", input.EventID),
+	)
 
 	return s.storage.RunInTx(ctx, func(tx ports.StorageTx) error {
 		if input.EventID == 0 {
@@ -38,6 +43,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 
 		ok, err := tx.TryMarkProcessed(ctx, input.EventID)
 		if err != nil {
+			log.Error("try mark processed failed", slog.Any("err", err))
 			return fmt.Errorf("%s: %w", op, err)
 		}
 
@@ -46,11 +52,13 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 		}
 
 		if err := tx.UpsertPayment(ctx, input.OrderID, input.UserID, input.TotalAmount, domain.StatusPaymentPending); err != nil {
+			log.Error("upsert payment failed", slog.Any("err", err))
 			return fmt.Errorf("%s: persist payment: %w", op, err)
 		}
 
 		if input.OrderID%2 == 0 {
 			if err := tx.UpdatePaymentStatus(ctx, input.OrderID, domain.StatusSucceeded); err != nil {
+				log.Error("update payment status failed", slog.Any("err", err))
 				return fmt.Errorf("%s: update payment status: %w", op, err)
 			}
 			event := events.PaymentStatus{
@@ -60,14 +68,17 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 			}
 			payload, err := json.Marshal(&event)
 			if err != nil {
+				log.Error("marshal event failed", slog.Any("err", err))
 				return fmt.Errorf("%s: encode success event: %w", op, err)
 			}
 
 			if err := tx.SaveEvent(ctx, s.eventType, payload, input.OrderID); err != nil {
+				log.Error("save event failed", slog.Any("err", err))
 				return fmt.Errorf("%s: kafka produce: %w", op, err)
 			}
 		} else {
 			if err := tx.UpdatePaymentStatus(ctx, input.OrderID, domain.StatusFailed); err != nil {
+				log.Error("update payment status failed", slog.Any("err", err))
 				return fmt.Errorf("%s: update payment status: %w", op, err)
 			}
 			event := events.PaymentStatus{
@@ -77,14 +88,15 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 			}
 			payload, err := json.Marshal(&event)
 			if err != nil {
+				log.Error("marshal event failed", slog.Any("err", err))
 				return fmt.Errorf("%s: encode failed event: %w", op, err)
 			}
 
 			if err := tx.SaveEvent(ctx, s.eventType, payload, input.OrderID); err != nil {
-				return fmt.Errorf("%s: kafka produce: %w", op, err)
+				log.Error("save event failed", slog.Any("err", err))
+				return fmt.Errorf("%s: save event: %w", op, err)
 			}
 		}
-
 		return nil
 	})
 }
