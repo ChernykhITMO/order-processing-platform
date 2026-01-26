@@ -85,10 +85,8 @@ func ProtoToDTOItems(items []*ordersv1.OrderItem) []OrderItem {
 
 func mapStatus(status ordersv1.OrderStatus) string {
 	switch status {
-	case ordersv1.OrderStatus_NEW:
+	case ordersv1.OrderStatus_new:
 		return "new"
-	case ordersv1.OrderStatus_PAYMENT_PENDING:
-		return "payment_pending"
 	default:
 		return "unspecified"
 	}

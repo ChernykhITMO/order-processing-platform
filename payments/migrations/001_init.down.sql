@@ -1,3 +1,4 @@
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS processed_events;
 DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS processed_events;

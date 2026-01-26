@@ -62,7 +62,7 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 		}
 
 		if err := s.producer.Produce(ctx, message, topic); err != nil {
-			log.Error("kafka produce failed", slog.Any("err", err))
+			log.Error("kafka_produce produce failed", slog.Any("err", err))
 			continue
 		}
 

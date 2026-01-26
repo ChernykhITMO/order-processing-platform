@@ -3,7 +3,7 @@ module github.com/ChernykhITMO/order-processing-platform/orders
 go 1.25.1
 
 require (
-	github.com/ChernykhITMO/order-processing-proto v0.0.2
+	github.com/ChernykhITMO/order-processing-proto v0.0.3
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1

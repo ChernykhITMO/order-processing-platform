@@ -21,3 +21,9 @@ CREATE TABLE IF NOT EXISTS events
 
 CREATE INDEX idx_events_unsent ON events (sent_at) WHERE sent_at IS NULL;
 CREATE INDEX idx_events_unlocked ON events (locked_at) WHERE locked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS processed_events
+(
+    event_id INT PRIMARY KEY,
+    processed_at TIMESTAMPTZ DEFAULT NULL
+)

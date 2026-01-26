@@ -74,7 +74,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 
 			if err := tx.SaveEvent(ctx, s.eventType, payload, input.OrderID); err != nil {
 				log.Error("save event failed", slog.Any("err", err))
-				return fmt.Errorf("%s: kafka produce: %w", op, err)
+				return fmt.Errorf("%s: kafka_produce produce: %w", op, err)
 			}
 		} else {
 			if err := tx.UpdatePaymentStatus(ctx, input.OrderID, domain.StatusFailed); err != nil {

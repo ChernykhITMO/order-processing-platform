@@ -19,25 +19,18 @@ type Consumer struct {
 	handler        Handler
 	topic          string
 	sessionTimeout time.Duration
+	readTimeout    time.Duration
 	log            *slog.Logger
 }
 
-func NewConsumer(address []string, handler Handler, topic, consumerGroup string, sessionTimeout time.Duration, log *slog.Logger) (*Consumer, error) {
-	const op = "kafka_produce.Consumer.New"
-	sessionTimeoutMs := int(sessionTimeout.Milliseconds())
-	heartbeatIntervalMs := int((sessionTimeout / 3).Milliseconds())
-	if sessionTimeoutMs < 1 {
-		sessionTimeoutMs = 1
-	}
-	if heartbeatIntervalMs < 1 {
-		heartbeatIntervalMs = 1
-	}
+func NewConsumer(address []string, handler Handler, topic, consumerGroup string, sessionTimeout, readTimeout time.Duration, log *slog.Logger) (*Consumer, error) {
+	const op = "kafka_consume.NewConsumer"
+
 	cfg := &kafka.ConfigMap{
-		"bootstrap.servers":     strings.Join(address, ","),
-		"session.timeout.ms":    sessionTimeoutMs,
-		"heartbeat.interval.ms": heartbeatIntervalMs,
-		"group.id":              consumerGroup,
-		"auto.offset.reset":     "earliest",
+		"bootstrap.servers":  strings.Join(address, ","),
+		"session.timeout.ms": int(sessionTimeout.Milliseconds()),
+		"group.id":           consumerGroup,
+		"auto.offset.reset":  "earliest",
 	}
 
 	c, err := kafka.NewConsumer(cfg)
@@ -49,47 +42,54 @@ func NewConsumer(address []string, handler Handler, topic, consumerGroup string,
 		return nil, fmt.Errorf("%s: subcribe to topic %w", op, err)
 	}
 
-	return &Consumer{consumer: c, topic: topic, handler: handler, sessionTimeout: sessionTimeout, log: log}, nil
+	return &Consumer{
+		consumer:       c,
+		topic:          topic,
+		handler:        handler,
+		sessionTimeout: sessionTimeout,
+		readTimeout:    readTimeout,
+		log:            log}, nil
 }
 
-func (c *Consumer) Start(ctx context.Context) {
-	const op = "kafka_produce.Consumer.Start"
-	c.log.Info("consumer started", slog.String("op", op), slog.String("topic", c.topic))
+func (c *Consumer) Start(ctx context.Context) error {
+	const op = "kafka_consume.Consumer.Start"
+
+	log := c.log.With(
+		slog.String("op", op),
+		slog.String("topic", c.topic),
+	)
+
+	log.Debug("consumer started")
 
 	for {
 		select {
 		case <-ctx.Done():
-			c.log.Info("consumer stopping", slog.String("op", op), slog.Any("err", ctx.Err()))
-			return
+			log.Info("consumer stopped", slog.String("op", op))
+			return nil
 		default:
 		}
 
-		kafkaMsg, err := c.consumer.ReadMessage(c.sessionTimeout)
+		kafkaMsg, err := c.consumer.ReadMessage(c.readTimeout)
+		log.Debug("reading kafka message")
 		if err != nil {
-			if kerr, ok := err.(kafka.Error); ok {
-				if kerr.Code() == kafka.ErrTimedOut || kerr.Code() == kafka.ErrUnknownTopic {
-					continue
-				}
-				c.log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
-				break
-			}
+			log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
+			continue
 		}
 
-		l := c.log.With(
-			slog.String("topic", *kafkaMsg.TopicPartition.Topic),
-			slog.Int("partition", int(kafkaMsg.TopicPartition.Partition)),
-			slog.Int64("offset", int64(kafkaMsg.TopicPartition.Offset)),
-		)
+		if kafkaMsg == nil {
+			continue
+		}
 
 		if err := c.handler.HandleMessage(kafkaMsg.Value); err != nil {
-			c.log.Error("handle message", slog.String("op", op), slog.String("err", err.Error()))
-			return
+			log.Error("handle message failed", slog.String("op", op), slog.Any("err", err))
+			return fmt.Errorf("%s: %w", op, err)
 		}
-
-		l.Debug("message handled", slog.String("op", op), slog.Int("bytes", len(kafkaMsg.Value)))
 	}
 }
 
 func (c *Consumer) Stop() error {
+	const op = "app.Stop"
+	log := c.log.With(slog.String("op", op))
+	log.Debug("stopping consumer")
 	return c.consumer.Close()
 }

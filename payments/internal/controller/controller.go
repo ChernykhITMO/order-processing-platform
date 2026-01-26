@@ -38,11 +38,9 @@ func (h *Controller) HandleMessage(message []byte) error {
 	const op = "controller.HandleMessage"
 	log := h.log.With(slog.String("op", op))
 
-	log.Info("controller started", slog.String("op", op))
-
 	var input dto.OrderCreated
 	if err := json.Unmarshal(message, &input); err != nil {
-		log.Error("decode message", slog.String("error", err.Error()))
+		log.Error("decode message", slog.Any("err", err))
 		return fmt.Errorf("%s: decode message: %w", op, err)
 	}
 
@@ -50,7 +48,7 @@ func (h *Controller) HandleMessage(message []byte) error {
 	defer cancel()
 
 	if err := h.service.HandleOrderCreated(ctx, input); err != nil {
-		log.Error("handle message", slog.String("error", err.Error()))
+		log.Error("handle failed", slog.Any("err", err))
 		return fmt.Errorf("%s: handle message: %w", op, err)
 	}
 

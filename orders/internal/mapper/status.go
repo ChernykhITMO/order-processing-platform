@@ -8,16 +8,8 @@ import (
 func MapStatusToProto(status domain.Status) ordersv1.OrderStatus {
 	switch status {
 	case "StatusNew":
-		return ordersv1.OrderStatus_NEW
-	case "StatusPaymentPending":
-		return ordersv1.OrderStatus_PAYMENT_PENDING
-	case "StatusPaid":
-		return ordersv1.OrderStatus_PAID
-	case "StatusInventoryPending":
-		return ordersv1.OrderStatus_INVENTORY_PENDING
-	case "StatusCompleted":
-		return ordersv1.OrderStatus_COMPLETED
+		return ordersv1.OrderStatus_new
+	default:
 	}
-
-	return ordersv1.OrderStatus_UNSPECIFIED
+	return ordersv1.OrderStatus_unspecified
 }

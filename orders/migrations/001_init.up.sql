@@ -2,8 +2,7 @@ CREATE TABLE IF NOT EXISTS orders
 (
     id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT,
-    status     TEXT      NOT NULL,
-
+    status     TEXT      NOT NULL DEFAULT 'new',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -19,13 +18,13 @@ CREATE TABLE IF NOT EXISTS order_items
 
 CREATE TABLE IF NOT EXISTS events
 (
-    id         SERIAL PRIMARY KEY,
-    event_type TEXT NOT NULL,
-    payload    JSONB NOT NULL,
+    id           SERIAL PRIMARY KEY,
+    event_type   TEXT   NOT NULL,
+    payload      JSONB  NOT NULL,
     aggregate_id BIGINT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    locked_at TIMESTAMPTZ DEFAULT NULL,
-    sent_at TIMESTAMPTZ DEFAULT NULL
+    created_at   TIMESTAMPTZ DEFAULT NOW(),
+    locked_at    TIMESTAMPTZ DEFAULT NULL,
+    sent_at      TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE INDEX idx_events_unsent ON events (sent_at) WHERE sent_at IS NULL;

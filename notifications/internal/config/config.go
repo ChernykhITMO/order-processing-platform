@@ -15,4 +15,5 @@ type Config struct {
 	TopicStatus    string
 	ConsumerGroup  string
 	SessionTimeout time.Duration
+	ReadTimeout    time.Duration
 }

@@ -70,7 +70,7 @@ func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, er
 	}
 
 	order, err := domain.NewOrder(
-		orderID, userID, domain.StatusFromDB(status),
+		orderID, userID, status,
 		items, createdAt, updatedAt)
 
 	return order, err

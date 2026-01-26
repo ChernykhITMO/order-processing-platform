@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -66,7 +67,8 @@ func (c *Consumer) Start(ctx context.Context) {
 				}
 			}
 			c.log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
-			break
+			time.Sleep(1 * time.Second)
+			continue
 		}
 
 		if kafkaMsg == nil {

@@ -3,6 +3,9 @@ package domain
 import "fmt"
 
 type Money int64
+
+type ID int64
+
 type OrderItem struct {
 	ProductID ID
 	Quantity  int32

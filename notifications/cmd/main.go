@@ -34,29 +34,28 @@ func main() {
 	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
+
 	log := setupLogger(mustGetEnv(envKey))
 
 	cfg := config.Config{
 		Addr:           mustGetEnv("REDIS_ADDR"),
-		Password:       getEnv("REDIS_PASSWORD", ""),
-		User:           getEnv("REDIS_USER", ""),
 		DB:             mustGetEnvInt("REDIS_DB"),
-		MaxRetries:     getEnvInt("REDIS_MAX_RETRIES", 0),
-		DialTimeout:    getEnvDuration("REDIS_DIAL_TIMEOUT", 0),
-		Timeout:        getEnvDuration("REDIS_TIMEOUT", 0),
 		TTL:            getEnvDuration("REDIS_TTL", 0),
+		SessionTimeout: getEnvDuration("SESSION_TIMEOUT", 30*time.Second),
 		KafkaBrokers:   kafkaBrokers,
 		TopicStatus:    mustGetEnv("KAFKA_TOPIC_STATUS"),
 		ConsumerGroup:  mustGetEnv("KAFKA_CONSUMER_GROUP"),
-		SessionTimeout: mustGetEnvDuration("SESSION_TIMEOUT"),
+		ReadTimeout:    getEnvDuration("READ_TIMEOUT", -1),
 	}
 
-	log.With(
+	log = log.With(
 		slog.String("redis_addr", cfg.Addr),
 		slog.String("kafka_topic", cfg.TopicStatus),
 		slog.String("kafka_consumer_group", cfg.ConsumerGroup),
 		slog.Duration("session_timeout", cfg.SessionTimeout),
-	).Info("starting application")
+	)
+
+	log.Debug("starting application")
 
 	application, err := app.New(log, cfg)
 	if err != nil {

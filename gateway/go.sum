@@ -1,5 +1,7 @@
 github.com/ChernykhITMO/order-processing-proto v0.0.2 h1:Vpymy31yLEp9ayk1qROu2TGPoNe587REewXW4TsoNfI=
 github.com/ChernykhITMO/order-processing-proto v0.0.2/go.mod h1:6pADYPNv3DSxeNRq9rK5yQQMF99+8kbKkJ9WD7jwcR8=
+github.com/ChernykhITMO/order-processing-proto v0.0.3 h1:ycAxILd11SWTfqlL8TtGv9p4M6o8uPtOyjm0GIh0wZY=
+github.com/ChernykhITMO/order-processing-proto v0.0.3/go.mod h1:6pADYPNv3DSxeNRq9rK5yQQMF99+8kbKkJ9WD7jwcR8=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=

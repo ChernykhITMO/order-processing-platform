@@ -9,8 +9,8 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/controller"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_consume"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_produce"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services/event_sender"

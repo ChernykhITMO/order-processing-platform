@@ -70,23 +70,5 @@ make migrate-up
 
 Redis поднимается контейнером и не требует инициализации. TTL хранится в `notifications/.env` через `REDIS_TTL` (например `48h`).
 
-## HTTP Gateway
-
-Gateway запускается отдельно и подключается к `orders` по gRPC (по умолчанию `localhost:50051`).
-
-Запуск:
-```bash
-go run ./gateway/cmd
-```
-
-Примеры запросов:
-```bash
-curl -X POST http://localhost:8080/orders \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":1,"items":[{"product_id":1,"quantity":2,"price":{"units":10,"nanos":0}}]}'
-
-curl http://localhost:8080/orders/1
-```
-
 ## Примечания
 - Порт gRPC сервиса orders задаётся в `orders/.env` (`ORDERS_GRPC_ADDR`). Он должен совпадать с портом, который пробрасывается в `docker-compose.yaml`.

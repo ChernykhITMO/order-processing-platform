@@ -29,7 +29,6 @@ func (s *Storage) CreateOrder(
 		_ = tx.Rollback()
 	}()
 
-	status := domain.StatusToDB(domain.StatusNew)
 	const insertOrder = `
 		INSERT INTO orders (user_id, status) VALUES ($1, $2)
 		RETURNING id, created_at
@@ -37,7 +36,7 @@ func (s *Storage) CreateOrder(
 
 	var createdAt time.Time
 
-	if err := tx.QueryRowContext(ctx, insertOrder, userID, status).Scan(&orderID, &createdAt); err != nil {
+	if err := tx.QueryRowContext(ctx, insertOrder, userID, domain.StatusNew).Scan(&orderID, &createdAt); err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 

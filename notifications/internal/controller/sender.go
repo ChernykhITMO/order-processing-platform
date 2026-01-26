@@ -9,15 +9,15 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/dto"
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/mapper"
-	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/usecase"
+	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/services"
 )
 
 type Sender struct {
-	uc  *usecase.Notification
+	uc  *services.Notification
 	log *slog.Logger
 }
 
-func NewSender(uc *usecase.Notification, log *slog.Logger) *Sender {
+func NewSender(uc *services.Notification, log *slog.Logger) *Sender {
 	return &Sender{
 		uc:  uc,
 		log: log,
@@ -26,11 +26,14 @@ func NewSender(uc *usecase.Notification, log *slog.Logger) *Sender {
 
 func (h *Sender) HandleMessage(message []byte) error {
 	const op = "controller.HandleMessage"
-	h.log.Info("controller started", slog.String("op", op))
+	log := h.log.With(slog.String("op", op))
+
+	log.Debug("starting handle message")
 
 	var payment dto.Payment
 
 	if err := json.Unmarshal(message, &payment); err != nil {
+		log.Error("unmarshal failed", slog.Any("err", err))
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -40,8 +43,10 @@ func (h *Sender) HandleMessage(message []byte) error {
 	input := mapper.MapToInput(payment)
 
 	if err := h.uc.SaveNotification(ctx, input); err != nil {
+		log.Error("save notification failed", slog.Any("err", err))
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	log.Debug("handle message successful")
 	return nil
 }
