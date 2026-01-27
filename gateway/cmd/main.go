@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/handlers"
@@ -49,10 +52,29 @@ func main() {
 	mux.HandleFunc("/orders/", gw.HandleOrderById)
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	errCh := make(chan error, 1)
+
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 	}
-	log.Fatal(srv.ListenAndServe())
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			errCh <- err
+		}
+	}()
 
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Println("shutdown error:", err)
+		}
+	case err := <-errCh:
+		log.Fatal(err)
+	}
 }

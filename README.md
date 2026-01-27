@@ -70,5 +70,12 @@ make migrate-up
 
 Redis поднимается контейнером и не требует инициализации. TTL хранится в `notifications/.env` через `REDIS_TTL` (например `48h`).
 
+## Линтер (Docker)
+
+В корне проекта есть цель `lint`, которая запускает `golangci-lint` в Docker для всех сервисов:
+```bash
+make lint
+```
+
 ## Примечания
 - Порт gRPC сервиса orders задаётся в `orders/.env` (`ORDERS_GRPC_ADDR`). Он должен совпадать с портом, который пробрасывается в `docker-compose.yaml`.

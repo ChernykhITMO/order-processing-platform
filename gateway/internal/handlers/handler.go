@@ -136,7 +136,7 @@ func (g *Gateway) HandleOrderById(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 
-	dtoResp := dto.ProtoGetToDTO(*resp)
+	dtoResp := dto.ProtoGetToDTO(resp)
 
 	if err := json.NewEncoder(w).Encode(&dtoResp); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

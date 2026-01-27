@@ -12,7 +12,6 @@ func MapProtoItems(items []*ordersv1.OrderItem) ([]domain.OrderItem, error) {
 	const op = "mapper.ProtoItems"
 
 	res := make([]domain.OrderItem, 0, len(items))
-
 	for _, it := range items {
 		var price int64
 		if it.GetPrice() != nil {
@@ -31,7 +30,6 @@ func MapInputItems(inputItems []dto.CreateOrderItem) ([]domain.OrderItem, error)
 	const op = "mapper.InputCreateItems"
 
 	res := make([]domain.OrderItem, 0, len(inputItems))
-
 	for _, it := range inputItems {
 		item, err := domain.NewOrderItem(it.ProductID, it.Quantity, it.Price)
 		if err != nil {
@@ -39,15 +37,11 @@ func MapInputItems(inputItems []dto.CreateOrderItem) ([]domain.OrderItem, error)
 		}
 		res = append(res, item)
 	}
-
 	return res, nil
 }
 
 func MapToCreateItems(items []*ordersv1.OrderItem) ([]dto.CreateOrderItem, error) {
-	const op = "mapper.CreateItems"
-
 	res := make([]dto.CreateOrderItem, 0, len(items))
-
 	for _, it := range items {
 		var price int64
 		if it.GetPrice() != nil {
@@ -61,5 +55,4 @@ func MapToCreateItems(items []*ordersv1.OrderItem) ([]dto.CreateOrderItem, error
 		res = append(res, o)
 	}
 	return res, nil
-
 }

@@ -43,7 +43,7 @@ type GetOrderResponse struct {
 	Order Order `json:"order"`
 }
 
-func ProtoGetToDTO(response ordersv1.GetOrderResponse) GetOrderResponse {
+func ProtoGetToDTO(response *ordersv1.GetOrderResponse) GetOrderResponse {
 	var output GetOrderResponse
 	if response.Order == nil {
 		return output

@@ -70,7 +70,9 @@ func TestE2E_OrderFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create order: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("unexpected status: %d", resp.StatusCode)

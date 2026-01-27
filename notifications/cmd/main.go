@@ -105,32 +105,12 @@ func parseKafkaBrokers(raw string) []string {
 	return out
 }
 
-func getEnv(key, def string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		return def
-	}
-	return val
-}
-
 func mustGetEnv(key string) string {
 	val := os.Getenv(key)
 	if val == "" {
 		log.Fatalf("%s is empty", key)
 	}
 	return val
-}
-
-func getEnvInt(key string, def int) int {
-	val := os.Getenv(key)
-	if val == "" {
-		return def
-	}
-	parsed, err := strconv.Atoi(val)
-	if err != nil {
-		return def
-	}
-	return parsed
 }
 
 func mustGetEnvInt(key string) int {
@@ -153,18 +133,6 @@ func getEnvDuration(key string, def time.Duration) time.Duration {
 	parsed, err := time.ParseDuration(val)
 	if err != nil {
 		return def
-	}
-	return parsed
-}
-
-func mustGetEnvDuration(key string) time.Duration {
-	val := os.Getenv(key)
-	if val == "" {
-		log.Fatalf("%s is empty", key)
-	}
-	parsed, err := time.ParseDuration(val)
-	if err != nil {
-		log.Fatalf("%s is invalid duration: %v", key, err)
 	}
 	return parsed
 }
