@@ -13,10 +13,10 @@ type Storage struct {
 	db *sql.DB
 }
 
-func New(storagePath string) (*Storage, error) {
+func New(dsn string) (*Storage, error) {
 	const op = "storage.postgres.New"
 
-	db, err := sql.Open("pgx", storagePath)
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

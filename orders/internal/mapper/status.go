@@ -7,7 +7,7 @@ import (
 
 func MapStatusToProto(status domain.Status) ordersv1.OrderStatus {
 	switch status {
-	case "StatusNew":
+	case domain.StatusNew:
 		return ordersv1.OrderStatus_new
 	default:
 	}
