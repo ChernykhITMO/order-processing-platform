@@ -8,7 +8,7 @@
   - `order-topic` — создание заказа
   - `status-topic` — результат оплаты
 - Outbox‑паттерн для надёжной публикации событий (orders, payments)
-- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`)
+- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`) — at‑least‑once доставка + защита от повторов
 - Redis‑хранилище уведомлений с TTL (настраивается через `REDIS_TTL`)
 
 [Protobuf contracts](https://github.com/ChernykhITMO/order-processing-proto)
