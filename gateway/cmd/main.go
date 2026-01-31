@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/handlers"
+	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/metrics"
+	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/middleware"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -48,22 +51,26 @@ func main() {
 		RequestTimeout: 2 * time.Second,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/orders", gw.HandleOrders)
-	mux.HandleFunc("/orders/", gw.HandleOrderById)
-	mux.Handle("/swagger/", httpSwagger.WrapHandler)
+	metrics.Register()
+
+	apiMux := http.NewServeMux()
+	apiMux.Handle("/metrics", promhttp.Handler())
+	apiMux.Handle("/orders", middleware.Instrument("gateway", "/orders", http.HandlerFunc(gw.HandleOrders)))
+	apiMux.Handle("/orders/", middleware.Instrument("gateway", "/orders/{id}", http.HandlerFunc(gw.HandleOrderById)))
+	apiMux.Handle("/swagger/", middleware.Instrument("gateway", "/swagger/*", httpSwagger.WrapHandler))
+
+	apiSrv := &http.Server{
+		Addr:    ":8080",
+		Handler: apiMux,
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	errCh := make(chan error, 1)
 
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := apiSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 	}()
@@ -72,9 +79,9 @@ func main() {
 	case <-ctx.Done():
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			log.Println("shutdown error:", err)
-		}
+
+		_ = apiSrv.Shutdown(shutdownCtx)
+
 	case err := <-errCh:
 		log.Fatal(err)
 	}
