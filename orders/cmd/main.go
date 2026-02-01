@@ -34,6 +34,10 @@ func main() {
 
 	cfg := config.MustLoad(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
 
+	if cfg == nil {
+		panic("cfg is empty")
+	}
+
 	log := setupLogger(cfg.Env)
 
 	application := app.New(log, cfg.GRPC.Port, cfg.DB.DSN, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)

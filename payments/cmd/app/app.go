@@ -83,7 +83,10 @@ func (a *App) run(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		err := a.sender.StartProcessEvents(ctx, period)
-		log.Error("start process events failed", slog.Any("err", err))
+		if err != nil {
+			log.Error("start process events failed", slog.Any("err", err))
+			return
+		}
 	}()
 
 	<-ctx.Done()

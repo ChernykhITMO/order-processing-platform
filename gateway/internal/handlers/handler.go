@@ -30,38 +30,36 @@ type Gateway struct {
 // @Router /orders [post]
 func (g *Gateway) HandleOrders(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method is not post", http.StatusMethodNotAllowed)
+		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "method is not post"})
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 
 	var req dto.CreateOrderRequest
 	if err := decodeJSONStrict(w, r, &req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
 		return
 	}
 	if req.UserID <= 0 {
-		http.Error(w, "user_id must be positive", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "user_id must be positive"})
 		return
 	}
 	if len(req.Items) == 0 {
-		http.Error(w, "items must not be empty", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "items must not be empty"})
 		return
 	}
 
 	items := make([]*ordersv1.OrderItem, 0, len(req.Items))
 	for _, it := range req.Items {
 		if it.ProductID <= 0 {
-			http.Error(w, "product_id must be positive", http.StatusBadRequest)
+			writeJSON(w, http.StatusBadRequest, apiError{Error: "product_id must be positive"})
 			return
 		}
 		if it.Quantity <= 0 {
-			http.Error(w, "quantity must be positive", http.StatusBadRequest)
+			writeJSON(w, http.StatusBadRequest, apiError{Error: "quantity must be positive"})
 			return
 		}
 		if it.Price < 0 {
-			http.Error(w, "price must be non-negative", http.StatusBadRequest)
+			writeJSON(w, http.StatusBadRequest, apiError{Error: "price must be non-negative"})
 			return
 		}
 		items = append(items, &ordersv1.OrderItem{
@@ -80,19 +78,11 @@ func (g *Gateway) HandleOrders(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := g.Orders.CreateOrder(ctx, &protoReq)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeGRPCError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	var dtoResp dto.CreateOrderResponse
-	dtoResp.OrderID = resp.OrderId
-
-	if err := json.NewEncoder(w).Encode(&dtoResp); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	writeJSON(w, http.StatusOK, dto.CreateOrderResponse{OrderID: resp.OrderId})
 }
 
 // HandleOrderById godoc
@@ -105,20 +95,18 @@ func (g *Gateway) HandleOrders(w http.ResponseWriter, r *http.Request) {
 // @Router /orders/{id} [get]
 func (g *Gateway) HandleOrderById(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "method is not get", http.StatusMethodNotAllowed)
+		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "method is not get"})
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 
 	idStr := strings.TrimPrefix(r.URL.Path, "/orders/")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
 		return
 	}
 	if id <= 0 {
-		http.Error(w, "id must be positive", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "id must be positive"})
 		return
 	}
 
@@ -130,18 +118,11 @@ func (g *Gateway) HandleOrderById(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := g.Orders.GetOrder(ctx, &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeGRPCError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-
-	dtoResp := dto.ProtoGetToDTO(resp)
-
-	if err := json.NewEncoder(w).Encode(&dtoResp); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	writeJSON(w, http.StatusOK, dto.ProtoGetToDTO(resp))
 }
 
 func decodeJSONStrict(w http.ResponseWriter, r *http.Request, dst any) error {

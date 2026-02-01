@@ -31,6 +31,7 @@ func NewConsumer(address []string, handler Handler, topic, consumerGroup string,
 		"session.timeout.ms": int(sessionTimeout.Milliseconds()),
 		"group.id":           consumerGroup,
 		"auto.offset.reset":  "earliest",
+		"enable.auto.commit": false,
 	}
 
 	c, err := kafka.NewConsumer(cfg)
@@ -82,7 +83,11 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		if err := c.handler.HandleMessage(kafkaMsg.Value); err != nil {
 			log.Error("handle message failed", slog.String("op", op), slog.Any("err", err))
-			return fmt.Errorf("%s: %w", op, err)
+			continue
+		}
+
+		if _, err := c.consumer.CommitMessage(kafkaMsg); err != nil {
+			log.Error("commit failed", slog.Any("err", err))
 		}
 	}
 }

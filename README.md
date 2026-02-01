@@ -1,46 +1,62 @@
 # Order Processing Platform
 
-Учебный микросервисный проект на Go: gRPC‑сервис заказов, HTTP‑gateway, событийное взаимодействие через Kafka, хранение в PostgreSQL и Redis
-## Что реализовано
-- gRPC‑API для создания и получения заказа
-- HTTP‑gateway, который проксирует REST → gRPC
-- Событийный поток через Kafka:
-  - `order-topic` — создание заказа
-  - `status-topic` — результат оплаты
-- Outbox‑паттерн для надёжной публикации событий (orders, payments)
-- Идемпотентная обработка Kafka‑сообщений в payments (таблица `processed_events`) — at‑least‑once доставка + защита от повторов
-- Redis‑хранилище уведомлений с TTL (настраивается через `REDIS_TTL`)
-
-[Protobuf contracts](https://github.com/ChernykhITMO/order-processing-proto)
+Учебный микросервисный проект на Go: gRPC сервис заказов, HTTP gateway, события через Kafka, хранение в PostgreSQL и Redis. Проект демонстрирует outbox, идемпотентную обработку событий и базовый observability стек.
 
 ## Архитектура
 
 ![architecture](docs/order-schema.png)
 
+## Что реализовано
+
+- gRPC API для создания и получения заказа
+- HTTP gateway (REST -> gRPC)
+- Kafka pipeline:
+  - `order-topic` — событие создания заказа
+  - `status-topic` — результат оплаты
+- Outbox паттерн для надежной публикации событий (orders, payments)
+- Идемпотентная обработка Kafka сообщений в payments (`processed_events`)
+- Redis хранилище уведомлений с TTL (настраивается через `REDIS_TTL`)
+- Метрики Prometheus + Grafana
+
+Protobuf contracts: `https://github.com/ChernykhITMO/order-processing-proto`
+
 ## Сервисы
 
-- **orders**  
-  gRPC‑сервис. Хранит заказы и позиции в PostgreSQL. Пишет событие `OrderCreated` в outbox‑таблицу и отправляет его в Kafka по расписанию
+- **orders**
+  - gRPC сервис заказов
+  - PostgreSQL (orders + order_items)
+  - Outbox публикация `OrderCreated`
 
-- **payments**  
-  Kafka‑consumer: принимает `OrderCreated`, создаёт/обновляет оплату в PostgreSQL, пишет событие `PaymentStatus` в outbox и публикует в Kafka
+- **payments**
+  - Kafka consumer `order-topic`
+  - PostgreSQL (payments + outbox)
+  - Публикация `PaymentStatus`
 
-- **notifications**  
-  Kafka‑consumer: принимает `PaymentStatus` и сохраняет уведомления в Redis с TTL
+- **notifications**
+  - Kafka consumer `status-topic`
+  - Redis хранилище уведомлений
 
-- **gateway**  
-  HTTP‑сервер (REST → gRPC). Работает как внешний вход в систему. Подключается к `orders` по gRPC
+- **gateway**
+  - HTTP REST API
+  - Проксирование в orders по gRPC
 
-## Технологии
-- Go, gRPC
-- PostgreSQL
-- Kafka (+ Kafka UI)
-- Redis
-- Docker Compose
+- **monitoring**
+  - Prometheus
+  - Grafana
 
-## Запуск локально (Docker)
+## Поток событий
 
-1) Скопируйте шаблоны окружения:
+1. Gateway принимает REST запрос на создание заказа.
+2. Orders сохраняет заказ и пишет `OrderCreated` в outbox.
+3. Outbox sender публикует `OrderCreated` в Kafka.
+4. Payments читает `OrderCreated`, сохраняет оплату и пишет `PaymentStatus` в outbox.
+5. Payments sender публикует `PaymentStatus` в Kafka.
+6. Notifications читает `PaymentStatus` и сохраняет уведомление в Redis.
+
+## Быстрый старт (Docker)
+
+1) Скопируйте env-шаблоны:
+
 ```bash
 cp .env.example .env
 cp orders/.env.example orders/.env
@@ -48,34 +64,61 @@ cp payments/.env.example payments/.env
 cp notifications/.env.example notifications/.env
 ```
 
-2) Проверьте адреса сервисов в `.env`:
-- Postgres: `postgres:5432`
-- Kafka: `kafka_produce:29092`
-- Redis: `redis:6379`
+2) Поднимите Postgres и создайте базы:
 
-3) Поднимите инфраструктуру и сервисы:
+```bash
+docker compose -f docker-compose.yaml up -d postgres
+make db-create
+```
+
+3) Поднимите весь стек:
+
 ```bash
 docker compose -f docker-compose.yaml up -d --build
 ```
 
-4) Создайте базы:
+4) Миграции:
+
+- В Docker (без локального migrate):
+
 ```bash
-make db-create
+make docker-migrate-up
 ```
 
-5) Примените миграции (нужен установленный `migrate` CLI):
+- Или локально (нужен `migrate`):
+
 ```bash
 make migrate-up
 ```
 
-Redis поднимается контейнером и не требует инициализации. TTL хранится в `notifications/.env` через `REDIS_TTL` (например `48h`).
+## Эндпоинты и доступы
 
-## Линтер (Docker)
+- API Gateway: `http://localhost:8080`
+  - `POST /orders`
+  - `GET /orders/{id}`
+- Swagger: `http://localhost:8080/swagger/index.html`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3000`
+- Kafka UI: `http://localhost:9020`
 
-В корне проекта есть цель `lint`, которая запускает `golangci-lint` в Docker для всех сервисов:
+## Линтер
+
 ```bash
 make lint
 ```
 
+## Тесты
+
+В каждом сервисе отдельный `go.mod`:
+
+```bash
+cd orders && go test ./...
+cd payments && go test ./...
+cd notifications && go test ./...
+cd gateway && go test ./...
+```
+
 ## Примечания
-- Порт gRPC сервиса orders задаётся в `orders/.env` (`ORDERS_GRPC_ADDR`). Он должен совпадать с портом, который пробрасывается в `docker-compose.yaml`.
+
+- `ORDERS_GRPC_ADDR` в `orders/.env` — это порт gRPC сервиса. Он должен совпадать с портом, который использует gateway и который проброшен в `docker-compose.yaml`.
+- Redis TTL задается через `REDIS_TTL` в `notifications/.env` (например `48h`).

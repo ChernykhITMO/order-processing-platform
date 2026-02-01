@@ -33,6 +33,7 @@ func NewConsumer(sender Handler, address []string, topic, consumerGroup string, 
 		"group.id":           consumerGroup,
 		"session.timeout.ms": sessionTimeout,
 		"auto.offset.reset":  "earliest",
+		"enable.auto.commit": false,
 	}
 
 	c, err := kafka.NewConsumer(cfg)
@@ -49,12 +50,19 @@ func NewConsumer(sender Handler, address []string, topic, consumerGroup string, 
 
 func (c *Consumer) Start(ctx context.Context) {
 	const op = "kafka_produce.Start"
-	c.log.Info("consumer started", slog.String("op", op), slog.String("topic", c.topic), slog.String("group", c.group))
+
+	log := c.log.With(
+		slog.String("op", op),
+		slog.String("topic", c.topic),
+		slog.String("group", c.group),
+	)
+
+	log.Info("consumer started")
 
 	for {
 		select {
 		case <-ctx.Done():
-			c.log.Info("consumer stopping", slog.String("op", op), slog.Any("err", ctx.Err()))
+			log.Info("consumer stopping", slog.Any("err", ctx.Err()))
 			return
 		default:
 		}
@@ -66,7 +74,7 @@ func (c *Consumer) Start(ctx context.Context) {
 					continue
 				}
 			}
-			c.log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
+			log.Error("read message failed", slog.Any("err", err))
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -75,18 +83,14 @@ func (c *Consumer) Start(ctx context.Context) {
 			continue
 		}
 
-		l := c.log.With(
-			slog.String("topic", *kafkaMsg.TopicPartition.Topic),
-			slog.Int("partition", int(kafkaMsg.TopicPartition.Partition)),
-			slog.Int64("offset", int64(kafkaMsg.TopicPartition.Offset)),
-		)
-
 		if err := c.sender.HandleMessage(kafkaMsg.Value); err != nil {
-			l.Error("handle message failed", slog.String("op", op), slog.Any("err", err))
+			log.Error("handle message failed", slog.Any("err", err))
 			continue
 		}
 
-		l.Debug("message handled", slog.String("op", op), slog.Int("bytes", len(kafkaMsg.Value)))
+		if _, err := c.consumer.CommitMessage(kafkaMsg); err != nil {
+			log.Error("commit failed", slog.Any("err", err))
+		}
 	}
 }
 
