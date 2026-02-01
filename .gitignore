@@ -7,3 +7,4 @@ orders/.env
 payments/.env
 notifications/.env
 redisdata/
+monitoring/data/
