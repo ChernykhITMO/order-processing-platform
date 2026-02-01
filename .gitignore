@@ -7,4 +7,4 @@ orders/.env
 payments/.env
 notifications/.env
 redisdata/
-monitoring/data/
+monitoring/prometheus/data/
