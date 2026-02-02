@@ -34,12 +34,19 @@ func main() {
 		panic("orders address is empty")
 	}
 
-	conn, err := grpc.NewClient(
+	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(
+		dialCtx,
 		ordersAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Println(err)
@@ -60,8 +67,12 @@ func main() {
 	apiMux.Handle("/swagger/", middleware.Instrument("gateway", "/swagger/*", httpSwagger.WrapHandler))
 
 	apiSrv := &http.Server{
-		Addr:    ":8080",
-		Handler: apiMux,
+		Addr:              ":8080",
+		Handler:           apiMux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      20 * time.Second,
+		IdleTimeout:       time.Minute,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -80,7 +91,9 @@ func main() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		_ = apiSrv.Shutdown(shutdownCtx)
+		if err := apiSrv.Shutdown(shutdownCtx); err != nil {
+			log.Println("http shutdown:", err)
+		}
 
 	case err := <-errCh:
 		log.Fatal(err)

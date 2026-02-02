@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
+
+const flushTimeoutMs = 5000
 
 type Producer struct {
 	producer *kafka.Producer
@@ -16,7 +17,12 @@ type Producer struct {
 func NewProducer(address []string) (*Producer, error) {
 	const op = "kafka_produce.NewProducer"
 	conf := &kafka.ConfigMap{
-		"bootstrap.servers": strings.Join(address, ","),
+		"bootstrap.servers":   strings.Join(address, ","),
+		"acks":                "all",
+		"enable.idempotence":  true,
+		"retries":             10,
+		"request.timeout.ms":  15000,
+		"delivery.timeout.ms": 60000,
 	}
 
 	p, err := kafka.NewProducer(conf)
@@ -36,27 +42,32 @@ func (p *Producer) Produce(ctx context.Context, message []byte, topic string) er
 		Value: message,
 	}
 
-	kafkaChan := make(chan kafka.Event)
+	kafkaChan := make(chan kafka.Event, 1)
 	if err := p.producer.Produce(kafkaMsg, kafkaChan); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	select {
+	case <-ctx.Done():
+		return fmt.Errorf("%s: %w", op, ctx.Err())
 	case ans := <-kafkaChan:
 		switch ev := ans.(type) {
 		case *kafka.Message:
+			if err := ev.TopicPartition.Error; err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
 			return nil
-		case kafka.Error:
-			return ev
 		default:
-			return fmt.Errorf("%s: unknown event type", op)
+			return fmt.Errorf("%s: unknown event type: %T", op, ans)
 		}
-	case <-ctx.Done():
-		return fmt.Errorf("%s: %w", op, ctx.Err())
 	}
 }
 
-func (p *Producer) Close() {
-	p.producer.Flush(int((5 * time.Millisecond) / time.Millisecond))
+func (p *Producer) Close() error {
+	remaining := p.producer.Flush(flushTimeoutMs)
 	p.producer.Close()
+	if remaining > 0 {
+		return fmt.Errorf("kafka producer: %d messages not delivered on close", remaining)
+	}
+	return nil
 }

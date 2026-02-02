@@ -60,20 +60,24 @@ func (c *Consumer) Start(ctx context.Context) error {
 		slog.String("topic", c.topic),
 	)
 
+	go func() {
+		<-ctx.Done()
+		log.Info("consumer stopped")
+		_ = c.consumer.Close()
+	}()
+
 	log.Debug("consumer started")
 
 	for {
-		select {
-		case <-ctx.Done():
-			log.Info("consumer stopped", slog.String("op", op))
-			return nil
-		default:
-		}
-
 		kafkaMsg, err := c.consumer.ReadMessage(c.readTimeout)
-		log.Debug("reading kafka message")
 		if err != nil {
-			log.Error("read message failed", slog.String("op", op), slog.Any("err", err))
+			if kerr, ok := err.(kafka.Error); ok && kerr.Code() == kafka.ErrTimedOut {
+				continue
+			}
+			if ctx.Err() != nil {
+				return nil
+			}
+			log.Error("read message failed", slog.Any("err", err))
 			continue
 		}
 
@@ -82,7 +86,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 		}
 
 		if err := c.handler.HandleMessage(kafkaMsg.Value); err != nil {
-			log.Error("handle message failed", slog.String("op", op), slog.Any("err", err))
+			log.Error("handle message failed", slog.Any("err", err))
 			continue
 		}
 

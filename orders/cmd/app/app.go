@@ -19,6 +19,7 @@ type App struct {
 	KafkaTopic    string
 	KafkaPeriod   time.Duration
 	storage       *postgres.Storage
+	log           *slog.Logger
 }
 
 func New(
@@ -56,6 +57,7 @@ func New(
 		KafkaTopic:    kafkaTopic,
 		KafkaPeriod:   kafkaPeriod,
 		storage:       storage,
+		log:           log,
 	}
 }
 
@@ -71,11 +73,17 @@ func (a *App) StartEventSender(ctx context.Context) {
 }
 
 func (a *App) Stop() {
+	const op = "app.Stop"
+	log := a.log.With(slog.String("op", op))
 	a.GRPCSrv.Stop()
 	if a.KafkaProducer != nil {
-		a.KafkaProducer.Close()
+		if err := a.KafkaProducer.Close(); err != nil {
+			log.Warn("kafka producer close", slog.Any("err", err))
+		}
 	}
 	if a.storage != nil {
-		_ = a.storage.Close()
+		if err := a.storage.Close(); err != nil {
+			log.Warn("storage close", slog.Any("err", err))
+		}
 	}
 }
