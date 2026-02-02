@@ -12,11 +12,11 @@ import (
 
 const (
 	sessionTimeoutMs = 6000
-	readTimeout      = 2 * time.Second
+	readTimeout      = time.Second
 )
 
 type Handler interface {
-	HandleMessage(message []byte) error
+	HandleMessage(ctx context.Context, message []byte) error
 }
 
 type Consumer struct {
@@ -75,6 +75,9 @@ func (c *Consumer) Start(ctx context.Context) {
 					continue
 				}
 			}
+			if ctx.Err() != nil {
+				return
+			}
 			log.Error("read message failed", slog.Any("err", err))
 			time.Sleep(1 * time.Second)
 			continue
@@ -84,7 +87,7 @@ func (c *Consumer) Start(ctx context.Context) {
 			continue
 		}
 
-		if err := c.sender.HandleMessage(kafkaMsg.Value); err != nil {
+		if err := c.sender.HandleMessage(ctx, kafkaMsg.Value); err != nil {
 			log.Error("handle message failed", slog.Any("err", err))
 			continue
 		}

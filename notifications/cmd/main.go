@@ -45,7 +45,7 @@ func main() {
 		KafkaBrokers:   kafkaBrokers,
 		TopicStatus:    mustGetEnv("KAFKA_TOPIC_STATUS"),
 		ConsumerGroup:  mustGetEnv("KAFKA_CONSUMER_GROUP"),
-		ReadTimeout:    getEnvDuration("READ_TIMEOUT", -1),
+		ReadTimeout:    getEnvDuration("READ_TIMEOUT", time.Second),
 	}
 
 	log = log.With(

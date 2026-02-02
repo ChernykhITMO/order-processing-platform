@@ -95,14 +95,15 @@ func (a *App) run(ctx context.Context) error {
 		log.Error("consumer stopping", slog.Any("err", err))
 	}
 
+	wg.Wait()
+
 	if err := a.producer.Close(); err != nil {
 		log.Warn("producer close: pending messages not delivered", slog.Any("err", err))
 	}
-	
+
 	if a.storage != nil {
 		_ = a.storage.Close()
 	}
-	wg.Wait()
 	return nil
 }
 

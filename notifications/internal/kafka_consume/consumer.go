@@ -60,15 +60,15 @@ func (c *Consumer) Start(ctx context.Context) error {
 		slog.String("topic", c.topic),
 	)
 
-	go func() {
-		<-ctx.Done()
-		log.Info("consumer stopped")
-		_ = c.consumer.Close()
-	}()
-
 	log.Debug("consumer started")
 
 	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+
 		kafkaMsg, err := c.consumer.ReadMessage(c.readTimeout)
 		if err != nil {
 			if kerr, ok := err.(kafka.Error); ok && kerr.Code() == kafka.ErrTimedOut {

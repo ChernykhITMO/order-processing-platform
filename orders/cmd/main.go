@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/cmd/app"
@@ -47,14 +48,16 @@ func main() {
 		slog.String("kafka_topic", cfg.Kafka.Topic),
 	).Info("starting application")
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	go func() {
 		application.GRPCSrv.MustRun()
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		application.StartEventSender(ctx)
 	}()
 
@@ -62,8 +65,9 @@ func main() {
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	<-stop
-
 	cancel()
+
+	wg.Wait()
 	application.Stop()
 	log.Info("gracefully stopped")
 }
