@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	sessionTimeout = 6000 // ms
+	sessionTimeoutMs = 6000
+	readTimeout      = 2 * time.Second
 )
 
 type Handler interface {
@@ -31,7 +32,7 @@ func NewConsumer(sender Handler, address []string, topic, consumerGroup string, 
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":  strings.Join(address, ","),
 		"group.id":           consumerGroup,
-		"session.timeout.ms": sessionTimeout,
+		"session.timeout.ms": sessionTimeoutMs,
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
 	}
@@ -67,7 +68,7 @@ func (c *Consumer) Start(ctx context.Context) {
 		default:
 		}
 
-		kafkaMsg, err := c.consumer.ReadMessage(sessionTimeout)
+		kafkaMsg, err := c.consumer.ReadMessage(readTimeout)
 		if err != nil {
 			if kerr, ok := err.(kafka.Error); ok {
 				if kerr.Code() == kafka.ErrTimedOut {
