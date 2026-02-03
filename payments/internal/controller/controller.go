@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/dto"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
 )
 
@@ -21,7 +20,7 @@ type Controller struct {
 	log     *slog.Logger
 }
 
-func NewController(service services.Service, storage ports.Storage, producer Producer, topic string, log *slog.Logger) *Controller {
+func NewController(service services.Service, log *slog.Logger) *Controller {
 	return &Controller{
 		service: service,
 		log:     log,

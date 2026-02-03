@@ -40,7 +40,7 @@ func New(log *slog.Logger, cfg config.Config) (*App, error) {
 	}
 
 	service := services.New(storage, log, cfg.EventType)
-	ctrl := controller.NewController(*service, storage, producer, cfg.TopicStatus, log)
+	ctrl := controller.NewController(*service, log)
 	consumer, err := kafka_consume.NewConsumer(ctrl, cfg.KafkaBrokers, cfg.TopicOrder, cfg.ConsumerGroup, log)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
