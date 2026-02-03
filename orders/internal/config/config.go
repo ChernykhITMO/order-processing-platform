@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -28,28 +29,31 @@ type KafkaConfig struct {
 	Period  time.Duration
 }
 
-func MustLoad(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey string) *Config {
+func Load(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey string) (*Config, error) {
 	env := getEnv(envKey)
 	if env == "" {
-		return nil
+		return nil, fmt.Errorf("env %s is empty", envKey)
 	}
 
 	grpcPortStr := getEnv(grpcPortKey)
+	if grpcPortStr == "" {
+		return nil, fmt.Errorf("env %s is empty", grpcPortKey)
+	}
 	grpcPort, err := strconv.Atoi(grpcPortStr)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse %s: %w", grpcPortKey, err)
 	}
 
 	pgDSN := getEnv(pgDSNKey)
 	if pgDSN == "" {
-		return nil
+		return nil, fmt.Errorf("env %s is empty", pgDSNKey)
 	}
 
 	kafkaBrokers := parseCSV(getEnv(kafkaBrokersKey))
 	kafkaTopic := getEnv(kafkaTopicKey)
 	kafkaPeriod, err := parseDuration(getEnv(kafkaPeriodKey))
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse %s: %w", kafkaPeriodKey, err)
 	}
 
 	return &Config{
@@ -65,7 +69,7 @@ func MustLoad(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kaf
 			Topic:   kafkaTopic,
 			Period:  kafkaPeriod,
 		},
-	}
+	}, nil
 }
 
 func getEnv(key string) string {

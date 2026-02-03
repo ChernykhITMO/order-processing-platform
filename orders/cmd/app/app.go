@@ -29,11 +29,11 @@ func New(
 	kafkaBrokers []string,
 	kafkaTopic string,
 	kafkaPeriod time.Duration,
-) *App {
+) (*App, error) {
 
 	storage, err := postgres.New(dsn)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	order := services.New(log, storage)
@@ -45,7 +45,7 @@ func New(
 	if len(kafkaBrokers) > 0 && kafkaTopic != "" {
 		producer, err = kafka_produce.NewProducer(kafkaBrokers)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		sender = event_sender.New(storage, producer, log)
 	}
@@ -58,7 +58,7 @@ func New(
 		KafkaPeriod:   kafkaPeriod,
 		storage:       storage,
 		log:           log,
-	}
+	}, nil
 }
 
 func (a *App) StartEventSender(ctx context.Context) {

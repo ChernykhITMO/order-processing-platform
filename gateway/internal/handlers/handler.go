@@ -58,7 +58,7 @@ func (g *Gateway) HandleOrders(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, apiError{Error: "quantity must be positive"})
 			return
 		}
-		if it.Price <= 0 {
+		if it.Price < 0 {
 			writeJSON(w, http.StatusBadRequest, apiError{Error: "price must be non-negative"})
 			return
 		}

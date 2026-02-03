@@ -17,20 +17,14 @@ type Producer interface {
 }
 
 type Controller struct {
-	service  services.Service
-	storage  ports.Storage
-	producer Producer
-	topic    string
-	log      *slog.Logger
+	service services.Service
+	log     *slog.Logger
 }
 
 func NewController(service services.Service, storage ports.Storage, producer Producer, topic string, log *slog.Logger) *Controller {
 	return &Controller{
-		service:  service,
-		storage:  storage,
-		producer: producer,
-		topic:    topic,
-		log:      log,
+		service: service,
+		log:     log,
 	}
 }
 

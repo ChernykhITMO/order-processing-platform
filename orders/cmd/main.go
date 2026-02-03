@@ -33,15 +33,20 @@ func main() {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
 
-	cfg := config.MustLoad(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
-
-	if cfg == nil {
-		panic("cfg is empty")
+	cfg, err := config.Load(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
+	if err != nil {
+		log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		log.Error("config load failed", slog.Any("err", err))
+		os.Exit(1)
 	}
 
 	log := setupLogger(cfg.Env)
 
-	application := app.New(log, cfg.GRPC.Port, cfg.DB.DSN, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)
+	application, err := app.New(log, cfg.GRPC.Port, cfg.DB.DSN, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)
+	if err != nil {
+		log.Error("app init failed", slog.Any("err", err))
+		os.Exit(1)
+	}
 
 	log.With(
 		slog.String("dsn", sanitizeDSN(cfg.DB.DSN)),
@@ -50,8 +55,9 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	errCh := make(chan error, 1)
 	go func() {
-		application.GRPCSrv.MustRun()
+		errCh <- application.GRPCSrv.Run()
 	}()
 
 	var wg sync.WaitGroup
@@ -64,7 +70,13 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	<-stop
+	select {
+	case <-stop:
+	case err := <-errCh:
+		if err != nil {
+			log.Error("gRPC server stopped with error", slog.Any("err", err))
+		}
+	}
 	cancel()
 
 	wg.Wait()

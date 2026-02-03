@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
+	"errors"
 	"log/slog"
 	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
-	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/cmd/app"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
@@ -26,47 +24,45 @@ const (
 func main() {
 	_ = godotenv.Load()
 
-	dsn := os.Getenv("PAYMENTS_PG_DSN")
-	if dsn == "" {
-		log.Fatal("PAYMENTS_PG_DSN is empty")
-	}
-
-	kafkaBrokers := parseKafkaBrokers(mustGetEnv("KAFKA_BROKERS"))
-	if len(kafkaBrokers) == 0 {
-		log.Fatal("KAFKA_BROKERS is empty")
-	}
+	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 
 	if os.Getenv(envKey) == "" && os.Getenv("ENV") != "" {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
-	log := setupLogger(mustGetEnv(envKey))
+	envVal := os.Getenv(envKey)
+	if envVal == "" {
+		log.Error("config load failed", slog.Any("err", errors.New("env is empty")))
+		os.Exit(1)
+	}
+	log = setupLogger(envVal)
 	log.Info("service starting")
 
-	application, err := app.New(log, config.Config{
-		DBDSN:         dsn,
-		KafkaBrokers:  kafkaBrokers,
-		TopicOrder:    mustGetEnv("KAFKA_TOPIC_ORDER"),
-		TopicStatus:   mustGetEnv("KAFKA_TOPIC_STATUS"),
-		EventType:     mustGetEnv("KAFKA_EVENT_TYPE"),
-		ConsumerGroup: mustGetEnv("KAFKA_CONSUMER_GROUP"),
-		SenderPeriod:  mustGetEnvDuration("KAFKA_SENDER_PERIOD"),
-	})
+	cfg, err := config.Load()
+	if err != nil {
+		log.Error("config load failed", slog.Any("err", err))
+		os.Exit(1)
+	}
+
+	application, err := app.New(log, cfg)
 
 	log.Info("config",
-		slog.String("db", sanitizeDSN(dsn)),
-		slog.Any("brokers", kafkaBrokers),
+		slog.String("db", sanitizeDSN(cfg.DBDSN)),
+		slog.Any("brokers", cfg.KafkaBrokers),
 	)
 
 	if err != nil {
 		log.Error("failed to create application", slog.Any("err", err))
-		return
+		os.Exit(1)
 	}
 	defer application.Stop()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	application.MustRun(ctx)
+	if err := application.Run(ctx); err != nil {
+		log.Error("application stopped with error", slog.Any("err", err))
+		os.Exit(1)
+	}
 }
 
 func setupLogger(env string) *slog.Logger {
@@ -90,40 +86,6 @@ func setupLogger(env string) *slog.Logger {
 	return log
 }
 
-func parseKafkaBrokers(raw string) []string {
-	if raw == "" {
-		return nil
-	}
-	parts := strings.Split(raw, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
-}
-
-func mustGetEnv(key string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		log.Fatalf("%s is empty", key)
-	}
-	return val
-}
-
-func mustGetEnvDuration(key string) time.Duration {
-	val := os.Getenv(key)
-	if val == "" {
-		log.Fatalf("%s is empty", key)
-	}
-	parsed, err := time.ParseDuration(val)
-	if err != nil {
-		log.Fatalf("%s is invalid duration: %v", key, err)
-	}
-	return parsed
-}
 
 func sanitizeDSN(dsn string) string {
 	u, err := url.Parse(dsn)

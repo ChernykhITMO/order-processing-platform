@@ -11,7 +11,7 @@ import (
 )
 
 type Handler interface {
-	HandleMessage(message []byte) error
+	HandleMessage(ctx context.Context, message []byte) error
 }
 
 type Consumer struct {
@@ -85,7 +85,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 			continue
 		}
 
-		if err := c.handler.HandleMessage(kafkaMsg.Value); err != nil {
+		if err := c.handler.HandleMessage(ctx, kafkaMsg.Value); err != nil {
 			log.Error("handle message failed", slog.Any("err", err))
 			continue
 		}

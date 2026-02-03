@@ -58,13 +58,7 @@ func New(log *slog.Logger, cfg config.Config) (*App, error) {
 	}, nil
 }
 
-func (a *App) MustRun(ctx context.Context) {
-	if err := a.run(ctx); err != nil {
-		panic(err)
-	}
-}
-
-func (a *App) run(ctx context.Context) error {
+func (a *App) Run(ctx context.Context) error {
 	const op = "app.run"
 
 	log := a.log.With(slog.String("op", op))

@@ -24,7 +24,7 @@ func NewSender(uc *services.Notification, log *slog.Logger) *Sender {
 	}
 }
 
-func (h *Sender) HandleMessage(message []byte) error {
+func (h *Sender) HandleMessage(parentCtx context.Context, message []byte) error {
 	const op = "controller.HandleMessage"
 	log := h.log.With(slog.String("op", op))
 
@@ -37,7 +37,7 @@ func (h *Sender) HandleMessage(message []byte) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)
 	defer cancel()
 
 	input := mapper.MapToInput(payment)

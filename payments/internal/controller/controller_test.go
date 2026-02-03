@@ -71,7 +71,7 @@ func TestController_HandleMessage_InvalidJSON(t *testing.T) {
 	svc := services.New(st, log, "event-status")
 	ctrl := NewController(*svc, st, nil, "", log)
 
-	if err := ctrl.HandleMessage([]byte("{")); err == nil {
+	if err := ctrl.HandleMessage(context.Background(), []byte("{")); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -86,7 +86,7 @@ func TestController_HandleMessage_Success(t *testing.T) {
 	input := dto.OrderCreated{EventID: 1, OrderID: 2, UserID: 3, TotalAmount: 100}
 	payload, _ := json.Marshal(input)
 
-	if err := ctrl.HandleMessage(payload); err != nil {
+	if err := ctrl.HandleMessage(context.Background(), payload); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -112,7 +112,7 @@ func TestController_HandleMessage_ServiceError(t *testing.T) {
 	input := dto.OrderCreated{EventID: 0, OrderID: 2, UserID: 3, TotalAmount: 100}
 	payload, _ := json.Marshal(input)
 
-	if err := ctrl.HandleMessage(payload); err == nil || !errors.Is(err, domain.ErrInvalidEventID) {
+	if err := ctrl.HandleMessage(context.Background(), payload); err == nil || !errors.Is(err, domain.ErrInvalidEventID) {
 		t.Fatalf("expected invalid event id error, got %v", err)
 	}
 }

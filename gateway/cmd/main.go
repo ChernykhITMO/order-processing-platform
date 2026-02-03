@@ -31,7 +31,8 @@ import (
 func main() {
 	ordersAddr := os.Getenv("ORDERS_GRPC_ADDR")
 	if ordersAddr == "" {
-		panic("orders address is empty")
+		log.Println("ORDERS_GRPC_ADDR is empty")
+		os.Exit(1)
 	}
 
 	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

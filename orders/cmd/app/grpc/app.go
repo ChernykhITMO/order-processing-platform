@@ -28,13 +28,8 @@ func New(log *slog.Logger, order *services.Order, port int) *App {
 	}
 }
 
-func (a *App) MustRun() {
-	if err := a.run(); err != nil {
-		panic(err)
-	}
-}
-func (a *App) run() error {
-	const op = "grpcapp.run"
+func (a *App) Run() error {
+	const op = "grpcapp.Run"
 
 	log := a.log.With(
 		slog.String("op", op),
