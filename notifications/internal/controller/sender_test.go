@@ -38,7 +38,7 @@ func TestSender_HandleMessage_InvalidJSON(t *testing.T) {
 	uc := services.New(st, log)
 	sender := NewSender(uc, log)
 
-	if err := sender.HandleMessage([]byte("{")); err == nil {
+	if err := sender.HandleMessage(context.Background(), []byte("{")); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -52,7 +52,7 @@ func TestSender_HandleMessage_Success(t *testing.T) {
 	payment := dto.Payment{OrderID: 10, UserID: 20, OrderStatus: domain.StatusSucceeded}
 	payload, _ := json.Marshal(payment)
 
-	if err := sender.HandleMessage(payload); err != nil {
+	if err := sender.HandleMessage(context.Background(), payload); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -76,7 +76,7 @@ func TestSender_HandleMessage_SaveError(t *testing.T) {
 	payment := dto.Payment{OrderID: 10, UserID: 20, OrderStatus: domain.StatusSucceeded}
 	payload, _ := json.Marshal(payment)
 
-	if err := sender.HandleMessage(payload); err == nil {
+	if err := sender.HandleMessage(context.Background(), payload); err == nil {
 		t.Fatalf("expected error")
 	}
 }

@@ -35,11 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(
-		dialCtx,
+	conn, err := grpc.NewClient(
 		ordersAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)

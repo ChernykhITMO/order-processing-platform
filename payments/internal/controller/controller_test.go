@@ -69,7 +69,7 @@ func TestController_HandleMessage_InvalidJSON(t *testing.T) {
 	st := &storageMock{tx: &txMock{}}
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
 	svc := services.New(st, log, "event-status")
-	ctrl := NewController(*svc, st, nil, "", log)
+	ctrl := NewController(*svc, log)
 
 	if err := ctrl.HandleMessage(context.Background(), []byte("{")); err == nil {
 		t.Fatalf("expected error")
@@ -81,7 +81,7 @@ func TestController_HandleMessage_Success(t *testing.T) {
 	st := &storageMock{tx: tx}
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
 	svc := services.New(st, log, "event-status")
-	ctrl := NewController(*svc, st, nil, "", log)
+	ctrl := NewController(*svc, log)
 
 	input := dto.OrderCreated{EventID: 1, OrderID: 2, UserID: 3, TotalAmount: 100}
 	payload, _ := json.Marshal(input)
@@ -107,7 +107,7 @@ func TestController_HandleMessage_ServiceError(t *testing.T) {
 	st := &storageMock{tx: &txMock{}}
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
 	svc := services.New(st, log, "event-status")
-	ctrl := NewController(*svc, st, nil, "", log)
+	ctrl := NewController(*svc, log)
 
 	input := dto.OrderCreated{EventID: 0, OrderID: 2, UserID: 3, TotalAmount: 100}
 	payload, _ := json.Marshal(input)
