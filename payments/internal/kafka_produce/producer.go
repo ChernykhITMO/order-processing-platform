@@ -18,7 +18,6 @@ func NewProducer(address []string) (*Producer, error) {
 	const op = "kafka_produce.NewProducer"
 	conf := &kafka.ConfigMap{
 		"bootstrap.servers":   strings.Join(address, ","),
-		"acks":                "all",
 		"enable.idempotence":  true,
 		"retries":             10,
 		"request.timeout.ms":  15000,
