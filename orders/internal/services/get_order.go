@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 )
 
 func (o *Order) GetOrder(ctx context.Context, input dto.GetOrderInput) (dto.GetOrderOutput, error) {

@@ -3,8 +3,8 @@ package mapper
 import (
 	"fmt"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 )
 

@@ -8,27 +8,27 @@ import (
 	"log/slog"
 	"testing"
 
+	dto2 "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain/events"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 )
 
 func TestOrdersService_Create(t *testing.T) {
 	errDB := errors.New("db")
-	validInput := dto.CreateOrderInput{
+	validInput := dto2.CreateOrderInput{
 		UserID: 1,
-		Items: []dto.CreateOrderItem{
+		Items: []dto2.CreateOrderItem{
 			{ProductID: 10, Quantity: 2, Price: 100},
 		},
 	}
-	invalidInput := dto.CreateOrderInput{
+	invalidInput := dto2.CreateOrderInput{
 		UserID: 1,
-		Items:  []dto.CreateOrderItem{},
+		Items:  []dto2.CreateOrderItem{},
 	}
 
 	tests := []struct {
 		name            string
-		input           dto.CreateOrderInput
+		input           dto2.CreateOrderInput
 		mockErr         error
 		wantErr         bool
 		wantCreateCalls int
@@ -72,7 +72,7 @@ func TestOrdersService_Get(t *testing.T) {
 	errDB := errors.New("db")
 	tests := []struct {
 		name      string
-		input     dto.GetOrderInput
+		input     dto2.GetOrderInput
 		mockOrder *domain.Order
 		mockErr   error
 		wantErrIs error
@@ -81,7 +81,7 @@ func TestOrdersService_Get(t *testing.T) {
 	}{
 		{
 			name:  "ok",
-			input: dto.GetOrderInput{ID: 10},
+			input: dto2.GetOrderInput{ID: 10},
 			mockOrder: &domain.Order{
 				ID:     10,
 				UserID: 1,
@@ -91,20 +91,20 @@ func TestOrdersService_Get(t *testing.T) {
 		},
 		{
 			name:      "invalid id",
-			input:     dto.GetOrderInput{ID: 0},
+			input:     dto2.GetOrderInput{ID: 0},
 			wantErrIs: domain.ErrInvalidOrderID,
 			wantCalls: 0,
 		},
 		{
 			name:      "not found",
-			input:     dto.GetOrderInput{ID: 11},
+			input:     dto2.GetOrderInput{ID: 11},
 			mockErr:   sql.ErrNoRows,
 			wantErrIs: domain.ErrOrderNotFound,
 			wantCalls: 1,
 		},
 		{
 			name:      "repo error",
-			input:     dto.GetOrderInput{ID: 12},
+			input:     dto2.GetOrderInput{ID: 12},
 			mockErr:   errDB,
 			wantErrIs: errDB,
 			wantCalls: 1,

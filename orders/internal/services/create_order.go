@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
 )
 

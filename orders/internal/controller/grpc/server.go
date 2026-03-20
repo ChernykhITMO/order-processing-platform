@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/dto"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/mapper"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
@@ -19,11 +19,6 @@ type serverAPI struct {
 func Register(gRPC *grpc.Server, order *services.Order) {
 	srvAPI := &serverAPI{order: order}
 	ordersv1.RegisterOrdersServiceServer(gRPC, srvAPI)
-}
-
-func toStatus(err error) error {
-	code, msg := mapper.MapDomainError(err)
-	return status.Error(code, msg)
 }
 
 func (s *serverAPI) CreateOrder(
@@ -57,4 +52,9 @@ func (s *serverAPI) GetOrder(ctx context.Context, req *ordersv1.GetOrderRequest)
 	return &ordersv1.GetOrderResponse{
 		Order: mapper.MapToProto(output.Order),
 	}, nil
+}
+
+func toStatus(err error) error {
+	code, msg := mapper.MapDomainError(err)
+	return status.Error(code, msg)
 }
