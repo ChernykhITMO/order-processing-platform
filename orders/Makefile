@@ -1,6 +1,7 @@
-DB_URL = postgres://postgres:postgres@localhost:5436/orders_db?sslmode=disable
+DB_URL = $(ORDERS_PG_DSN)
 MIGRATIONS_DIR = ./migrations
 DB=orders_db
+
 run:
 	go run cmd/main.go
 
