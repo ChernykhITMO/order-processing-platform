@@ -9,18 +9,18 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/dto"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
 )
 
 type Service struct {
-	storage   ports.Storage
+	repo      postgres.Repository
 	log       *slog.Logger
 	eventType string
 }
 
-func New(storage ports.Storage, log *slog.Logger, eventType string) *Service {
+func New(repo postgres.Repository, log *slog.Logger, eventType string) *Service {
 	return &Service{
-		storage:   storage,
+		repo:      repo,
 		log:       log,
 		eventType: eventType,
 	}
@@ -36,7 +36,7 @@ func (s *Service) HandleOrderCreated(ctx context.Context, input dto.OrderCreated
 		slog.Int64("event_id", input.EventID),
 	)
 
-	return s.storage.RunInTx(ctx, func(tx ports.StorageTx) error {
+	return s.repo.RunInTx(ctx, func(tx postgres.TxRepository) error {
 		if input.EventID == 0 {
 			return fmt.Errorf("%s: %w", op, domain.ErrInvalidEventID)
 		}

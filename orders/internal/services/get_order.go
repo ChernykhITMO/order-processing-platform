@@ -2,13 +2,13 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
+	"github.com/jackc/pgx/v5"
 )
 
 func (o *Order) GetOrder(ctx context.Context, input dto.GetOrderInput) (dto.GetOrderOutput, error) {
@@ -24,9 +24,9 @@ func (o *Order) GetOrder(ctx context.Context, input dto.GetOrderInput) (dto.GetO
 		return output, fmt.Errorf("%s: %w", op, domain.ErrInvalidOrderID)
 	}
 
-	order, err := o.postgres.GetOrderByID(ctx, input.ID)
+	order, err := o.repo.GetOrderByID(ctx, input.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return output, fmt.Errorf("%s: %w", op, domain.ErrOrderNotFound)
 		}
 		log.Error("get order failed", slog.Any("err", err))

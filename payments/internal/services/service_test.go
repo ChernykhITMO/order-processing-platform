@@ -11,7 +11,7 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/dto"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
 )
 
 func TestService_HandleOrderCreated_InvalidEventID(t *testing.T) {
@@ -117,7 +117,7 @@ type storageMock struct {
 	runCalled int
 }
 
-func (m *storageMock) RunInTx(ctx context.Context, fn func(tx ports.StorageTx) error) error {
+func (m *storageMock) RunInTx(ctx context.Context, fn func(tx postgres.TxRepository) error) error {
 	m.runCalled++
 	return fn(m.tx)
 }
@@ -131,6 +131,10 @@ func (m *storageMock) MarkSent(ctx context.Context, id int64) error {
 }
 
 func (m *storageMock) Close() error {
+	return nil
+}
+
+func (m *storageMock) Ping(ctx context.Context) error {
 	return nil
 }
 

@@ -1,33 +1,19 @@
 package services
 
 import (
-	"context"
 	"log/slog"
 
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain/events"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
 )
 
-type Postgres interface {
-	CreateOrder(
-		ctx context.Context,
-		userID int64,
-		items []domain.OrderItem) (orderID int64, err error)
-
-	GetOrderByID(ctx context.Context, id int64) (*domain.Order, error)
-	GetNewEvent(ctx context.Context) (events.OrderCreated, int64, error)
-	MarkSent(ctx context.Context, eventID int64) error
-	Close() error
-}
-
 type Order struct {
-	log      *slog.Logger
-	postgres Postgres
+	log  *slog.Logger
+	repo postgres.Repository
 }
 
-func New(log *slog.Logger, postgres Postgres) *Order {
+func New(log *slog.Logger, repo postgres.Repository) *Order {
 	return &Order{
-		log:      log,
-		postgres: postgres,
+		log:  log,
+		repo: repo,
 	}
 }

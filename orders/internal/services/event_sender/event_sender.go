@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
 )
 
 type Kafka interface {
@@ -14,14 +14,14 @@ type Kafka interface {
 }
 
 type Sender struct {
-	storage  services.Postgres
+	repo     postgres.Repository
 	producer Kafka
 	log      *slog.Logger
 }
 
-func New(storage services.Postgres, producer Kafka, log *slog.Logger) *Sender {
+func New(repo postgres.Repository, producer Kafka, log *slog.Logger) *Sender {
 	return &Sender{
-		storage:  storage,
+		repo:     repo,
 		producer: producer,
 		log:      log,
 	}
@@ -45,7 +45,7 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 		case <-ticker.C:
 		}
 
-		event, eventID, err := s.storage.GetNewEvent(ctx)
+		event, eventID, err := s.repo.GetNewEvent(ctx)
 		if err != nil {
 			log.Error("failed to get new event", slog.Any("err", err))
 			continue
@@ -66,7 +66,7 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 			continue
 		}
 
-		if err := s.storage.MarkSent(ctx, eventID); err != nil {
+		if err := s.repo.MarkSent(ctx, eventID); err != nil {
 			log.Error("mark event sent failed", slog.Any("err", err))
 			continue
 		}

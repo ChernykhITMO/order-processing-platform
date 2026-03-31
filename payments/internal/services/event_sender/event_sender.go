@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
 )
 
 type Producer interface {
@@ -14,15 +14,15 @@ type Producer interface {
 }
 
 type Sender struct {
-	storage  ports.Storage
+	repo     postgres.Repository
 	producer Producer
 	log      *slog.Logger
 	topic    string
 }
 
-func New(storage ports.Storage, producer Producer, log *slog.Logger, topic string) *Sender {
+func New(repo postgres.Repository, producer Producer, log *slog.Logger, topic string) *Sender {
 	return &Sender{
-		storage:  storage,
+		repo:     repo,
 		producer: producer,
 		log:      log,
 		topic:    topic,
@@ -45,7 +45,7 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 		case <-ticker.C:
 		}
 
-		event, err := s.storage.GetNewEvent(ctx)
+		event, err := s.repo.GetNewEvent(ctx)
 		if err != nil {
 			log.Error("fetch event failed", slog.Any("err", err))
 			continue
@@ -65,7 +65,7 @@ func (s *Sender) StartProcessEvents(ctx context.Context, handlePeriod time.Durat
 			continue
 		}
 
-		if err := s.storage.MarkSent(ctx, event.EventID); err != nil {
+		if err := s.repo.MarkSent(ctx, event.EventID); err != nil {
 			log.Error("mark sent failed", slog.Any("err", err))
 			continue
 		}

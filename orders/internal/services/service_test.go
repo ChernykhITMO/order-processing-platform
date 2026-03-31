@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"io"
 	"log/slog"
@@ -11,6 +10,7 @@ import (
 	dto2 "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/dto"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain/events"
+	"github.com/jackc/pgx/v5"
 )
 
 func TestOrdersService_Create(t *testing.T) {
@@ -98,7 +98,7 @@ func TestOrdersService_Get(t *testing.T) {
 		{
 			name:      "not found",
 			input:     dto2.GetOrderInput{ID: 11},
-			mockErr:   sql.ErrNoRows,
+			mockErr:   pgx.ErrNoRows,
 			wantErrIs: domain.ErrOrderNotFound,
 			wantCalls: 1,
 		},
@@ -178,5 +178,9 @@ func (m *postgresMock) MarkSent(ctx context.Context, eventID int64) error {
 }
 
 func (m *postgresMock) Close() error {
+	return nil
+}
+
+func (m *postgresMock) Ping(ctx context.Context) error {
 	return nil
 }

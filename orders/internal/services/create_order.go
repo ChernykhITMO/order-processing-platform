@@ -31,7 +31,7 @@ func (o *Order) CreateOrder(ctx context.Context, input dto.CreateOrderInput) (dt
 		return output, fmt.Errorf("%s: %w", op, err)
 	}
 
-	orderID, err := o.postgres.CreateOrder(ctx, input.UserID, items)
+	orderID, err := o.repo.CreateOrder(ctx, input.UserID, items)
 	if err != nil {
 		log.Error("create order failed", slog.Any("err", err))
 		return output, fmt.Errorf("%s: %w", op, err)

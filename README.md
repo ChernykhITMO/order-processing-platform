@@ -1,6 +1,6 @@
 # Order Processing Platform
 
-Учебный микросервисный проект на Go: gRPC сервис заказов, HTTP gateway, события через Kafka, хранение в PostgreSQL и Redis. Проект демонстрирует outbox, идемпотентную обработку событий и базовый observability стек.
+Учебный микросервисный проект на Go: gRPC сервис заказов, HTTP gateway, события через Kafka, хранение в PostgreSQL и Redis. Проект демонстрирует outbox, идемпотентную обработку событий, `pgxpool`, `goose`, `tx manager` и базовый observability стек.
 
 ## Архитектура
 
@@ -15,6 +15,9 @@
   - `status-topic` — результат оплаты
 - Outbox паттерн для надежной публикации событий (orders, payments)
 - Идемпотентная обработка Kafka сообщений в payments (`processed_events`)
+- `pgxpool` для PostgreSQL в `orders` и `payments`
+- `tx manager` для единообразного управления транзакциями
+- `goose` миграции для `orders` и `payments`
 - Redis хранилище уведомлений с TTL (настраивается через `REDIS_TTL`)
 - Метрики Prometheus + Grafana
 
@@ -24,12 +27,12 @@ Protobuf contracts: `https://github.com/ChernykhITMO/order-processing-proto`
 
 - **orders**
   - gRPC сервис заказов
-  - PostgreSQL (orders + order_items)
+  - PostgreSQL (`pgxpool`, `orders` + `order_items` + `events`)
   - Outbox публикация `OrderCreated`
 
 - **payments**
   - Kafka consumer `order-topic`
-  - PostgreSQL (payments + outbox)
+  - PostgreSQL (`pgxpool`, `payments` + `processed_events` + `events`)
   - Публикация `PaymentStatus`
 
 - **notifications**
@@ -71,21 +74,19 @@ docker compose -f docker-compose.yaml up -d postgres
 make db-create
 ```
 
-3) Поднимите весь стек:
-
-```bash
-docker compose -f docker-compose.yaml up -d --build
-```
-
-4) Миграции:
-
-- В Docker (без локального migrate):
+3) Примените миграции:
 
 ```bash
 make docker-migrate-up
 ```
 
-- Или локально (нужен `migrate`):
+4) Поднимите весь стек:
+
+```bash
+docker compose -f docker-compose.yaml up -d --build
+```
+
+Локально миграции тоже идут через `goose`-runner внутри сервисов:
 
 ```bash
 make migrate-up
@@ -96,6 +97,11 @@ make migrate-up
 - API Gateway: `http://localhost:8080`
   - `POST /orders`
   - `GET /orders/{id}`
+  - `GET /healthz`
+  - `GET /readyz`
+- Orders health: `http://localhost:8081/healthz`, `http://localhost:8081/readyz`
+- Payments health: `http://localhost:8082/healthz`, `http://localhost:8082/readyz`
+- Notifications health: `http://localhost:8083/healthz`, `http://localhost:8083/readyz`
 - Swagger: `http://localhost:8080/swagger/index.html`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3000`
@@ -120,5 +126,7 @@ cd gateway && go test ./...
 
 ## Примечания
 
-- `ORDERS_GRPC_ADDR` в `orders/.env` — это порт gRPC сервиса. Он должен совпадать с портом, который использует gateway и который проброшен в `docker-compose.yaml`.
+- `ORDERS_GRPC_ADDR` в `orders/.env` — это внутренний gRPC порт сервиса `orders`. Для health/readiness используется отдельный HTTP адрес `ORDERS_HEALTH_ADDR`.
+- Для тюнинга пула PostgreSQL используются env-переменные `*_PG_MAX_CONNS`, `*_PG_MIN_CONNS`, `*_PG_MAX_CONN_IDLE_TIME`, `*_PG_HEALTH_CHECK_PERIOD`.
+- Интерфейсы хранилища теперь лежат рядом с реализацией в пакетах `orders/internal/storage/postgres` и `payments/internal/storage/postgres`.
 - Redis TTL задается через `REDIS_TTL` в `notifications/.env` (например `48h`).
