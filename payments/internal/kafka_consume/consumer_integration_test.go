@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/controller"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/dto"
@@ -50,6 +51,16 @@ func cleanupPaymentsTables(t *testing.T, db *sql.DB) {
 	const query = `TRUNCATE TABLE payments, events, processed_events RESTART IDENTITY CASCADE`
 	if _, err := db.Exec(query); err != nil {
 		t.Fatalf("db exec: %v", err)
+	}
+}
+
+func paymentsPGTestConfig(dsn string) config.DBConfig {
+	return config.DBConfig{
+		DSN:               dsn,
+		MaxConns:          4,
+		MinConns:          1,
+		MaxConnIdleTime:   time.Minute,
+		HealthCheckPeriod: time.Second,
 	}
 }
 
@@ -93,7 +104,7 @@ func TestPaymentsKafkaConsumer_Integration(t *testing.T) {
 	cleanupPaymentsTables(t, db)
 	defer cleanupPaymentsTables(t, db)
 
-	storage, err := postgres.New(dsn)
+	storage, err := postgres.New(paymentsPGTestConfig(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -103,7 +114,7 @@ func TestPaymentsKafkaConsumer_Integration(t *testing.T) {
 
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
 	svc := services.New(storage, log, eventType)
-	ctrl := controller.NewController(svc, storage, nil, "", log)
+	ctrl := controller.NewController(*svc, log)
 
 	consumer, err := NewConsumer(ctrl, brokers, topic, "test-group-"+time.Now().Format("150405.000"), log)
 	if err != nil {

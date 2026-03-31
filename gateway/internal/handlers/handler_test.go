@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,8 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/dto"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -172,7 +173,7 @@ func TestHandleOrderById_Success(t *testing.T) {
 }
 
 func TestHandleOrders_UpstreamError(t *testing.T) {
-	client := &ordersClientMock{createErr: errors.New("grpc error")}
+	client := &ordersClientMock{createErr: status.Error(codes.InvalidArgument, "grpc error")}
 	gateway := &Gateway{Orders: client, RequestTimeout: time.Second}
 
 	payload := dto.CreateOrderRequest{
@@ -192,7 +193,7 @@ func TestHandleOrders_UpstreamError(t *testing.T) {
 }
 
 func TestHandleOrderById_UpstreamError(t *testing.T) {
-	client := &ordersClientMock{getErr: errors.New("grpc error")}
+	client := &ordersClientMock{getErr: status.Error(codes.InvalidArgument, "grpc error")}
 	gateway := &Gateway{Orders: client, RequestTimeout: time.Second}
 
 	req := httptest.NewRequest(http.MethodGet, "/orders/1", nil)

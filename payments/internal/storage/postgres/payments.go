@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type TxStorage struct {
-	tx *sql.Tx
+	tx pgx.Tx
 }
 
 func (s *TxStorage) UpdatePaymentStatus(ctx context.Context, orderID int64, status string) error {
@@ -15,7 +16,7 @@ func (s *TxStorage) UpdatePaymentStatus(ctx context.Context, orderID int64, stat
 
 	const query = `UPDATE payments SET status = $1 WHERE order_id = $2;`
 
-	if _, err := s.tx.ExecContext(ctx, query, status, orderID); err != nil {
+	if _, err := s.tx.Exec(ctx, query, status, orderID); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
@@ -33,7 +34,7 @@ func (s *TxStorage) UpsertPayment(ctx context.Context, orderID, userID, totalAmo
 		              status = EXCLUDED.status;
 	`
 
-	if _, err := s.tx.ExecContext(ctx, query, orderID, userID, totalAmount, status); err != nil {
+	if _, err := s.tx.Exec(ctx, query, orderID, userID, totalAmount, status); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

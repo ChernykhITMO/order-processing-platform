@@ -75,3 +75,10 @@ func (a *App) Run(ctx context.Context) error {
 	log.Debug("stopping application")
 	return nil
 }
+
+func (a *App) CheckReadiness(ctx context.Context) error {
+	if a.storage == nil {
+		return nil
+	}
+	return a.storage.Ping(ctx)
+}

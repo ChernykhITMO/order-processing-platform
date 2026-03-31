@@ -11,12 +11,14 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/cmd/app"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/config"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/health"
 	"github.com/joho/godotenv"
 )
 
 const (
 	envKey          = "env"
 	gRPCAddrKey     = "ORDERS_GRPC_ADDR"
+	healthAddrKey   = "ORDERS_HEALTH_ADDR"
 	dsnKey          = "ORDERS_PG_DSN"
 	kafkaBrokersKey = "KAFKA_BROKERS"
 	kafkaTopicKey   = "KAFKA_TOPIC"
@@ -33,7 +35,7 @@ func main() {
 		_ = os.Setenv(envKey, os.Getenv("ENV"))
 	}
 
-	cfg, err := config.Load(envKey, gRPCAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
+	cfg, err := config.Load(envKey, gRPCAddrKey, healthAddrKey, dsnKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey)
 	if err != nil {
 		log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 		log.Error("config load failed", slog.Any("err", err))
@@ -42,7 +44,7 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	application, err := app.New(log, cfg.GRPC.Port, cfg.DB.DSN, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)
+	application, err := app.New(log, cfg.GRPC.Port, cfg.DB, cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.Period)
 	if err != nil {
 		log.Error("app init failed", slog.Any("err", err))
 		os.Exit(1)
@@ -50,7 +52,10 @@ func main() {
 
 	log.With(
 		slog.String("dsn", sanitizeDSN(cfg.DB.DSN)),
+		slog.Int64("db_max_conns", int64(cfg.DB.MaxConns)),
+		slog.Int64("db_min_conns", int64(cfg.DB.MinConns)),
 		slog.String("kafka_topic", cfg.Kafka.Topic),
+		slog.String("health_addr", cfg.Health.Addr),
 	).Info("starting application")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -58,6 +63,10 @@ func main() {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- application.GRPCSrv.Run()
+	}()
+	go func() {
+		healthSrv := health.NewServer(cfg.Health.Addr, log, application.CheckReadiness)
+		errCh <- healthSrv.Run(ctx)
 	}()
 
 	var wg sync.WaitGroup

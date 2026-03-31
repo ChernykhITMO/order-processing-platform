@@ -5,16 +5,15 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -32,9 +31,9 @@ func getPaymentsDSN(t *testing.T) string {
 	return dsn
 }
 
-func cleanupPaymentsTables(t *testing.T, db *sql.DB) {
+func cleanupPaymentsTables(t *testing.T, db *pgxpool.Pool) {
 	const query = `TRUNCATE TABLE payments, events, processed_events RESTART IDENTITY CASCADE`
-	if _, err := db.Exec(query); err != nil {
+	if _, err := db.Exec(context.Background(), query); err != nil {
 		t.Fatalf("db exec: %v", err)
 	}
 }
@@ -42,18 +41,18 @@ func cleanupPaymentsTables(t *testing.T, db *sql.DB) {
 func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 	dsn := getPaymentsDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupPaymentsTables(t, db)
 	defer cleanupPaymentsTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -71,7 +70,7 @@ func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 		eventType         = "event-status"
 	)
 
-	if err := storage.RunInTx(ctx, func(tx ports.StorageTx) error {
+	if err := storage.RunInTx(ctx, func(tx TxRepository) error {
 		ok, err := tx.TryMarkProcessed(ctx, eventID)
 		if err != nil {
 			return err
@@ -101,7 +100,7 @@ func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 		t.Fatalf("run in tx: %v", err)
 	}
 
-	if err := storage.RunInTx(ctx, func(tx ports.StorageTx) error {
+	if err := storage.RunInTx(ctx, func(tx TxRepository) error {
 		ok, err := tx.TryMarkProcessed(ctx, eventID)
 		if err != nil {
 			return err
@@ -115,7 +114,7 @@ func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 	}
 
 	var status string
-	if err := db.QueryRow(`SELECT status FROM payments WHERE order_id = $1`, orderID).Scan(&status); err != nil {
+	if err := db.QueryRow(context.Background(), `SELECT status FROM payments WHERE order_id = $1`, orderID).Scan(&status); err != nil {
 		t.Fatalf("select payment: %v", err)
 	}
 	if status != domain.StatusSucceeded {
@@ -123,7 +122,7 @@ func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 	}
 
 	var processedCount int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM processed_events WHERE event_id = $1`, eventID).Scan(&processedCount); err != nil {
+	if err := db.QueryRow(context.Background(), `SELECT COUNT(*) FROM processed_events WHERE event_id = $1`, eventID).Scan(&processedCount); err != nil {
 		t.Fatalf("select processed_events: %v", err)
 	}
 	if processedCount != 1 {
@@ -157,18 +156,18 @@ func TestPaymentsStorage_RunInTxAndOutbox_Integration(t *testing.T) {
 func TestPaymentsStorage_LockedEvents_Integration(t *testing.T) {
 	dsn := getPaymentsDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupPaymentsTables(t, db)
 	defer cleanupPaymentsTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -181,12 +180,12 @@ func TestPaymentsStorage_LockedEvents_Integration(t *testing.T) {
 		t.Fatalf("marshal payload: %v", err)
 	}
 
-	if _, err := db.Exec(`INSERT INTO events (event_type, payload, aggregate_id, created_at) VALUES ($1, $2, $3, $4)`,
+	if _, err := db.Exec(context.Background(), `INSERT INTO events (event_type, payload, aggregate_id, created_at) VALUES ($1, $2, $3, $4)`,
 		"event-status", payload, 1, time.Now()); err != nil {
 		t.Fatalf("insert event: %v", err)
 	}
 
-	if _, err := db.Exec(`UPDATE events SET locked_at = now() - interval '2 minutes' WHERE id = 1`); err != nil {
+	if _, err := db.Exec(context.Background(), `UPDATE events SET locked_at = now() - interval '2 minutes' WHERE id = 1`); err != nil {
 		t.Fatalf("update locked_at: %v", err)
 	}
 
@@ -196,5 +195,15 @@ func TestPaymentsStorage_LockedEvents_Integration(t *testing.T) {
 	}
 	if evt.EventID == 0 {
 		t.Fatalf("expected stale locked event to be picked")
+	}
+}
+
+func configForTest(dsn string) config.DBConfig {
+	return config.DBConfig{
+		DSN:               dsn,
+		MaxConns:          4,
+		MinConns:          1,
+		MaxConnIdleTime:   time.Minute,
+		HealthCheckPeriod: time.Second,
 	}
 }

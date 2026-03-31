@@ -12,10 +12,12 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/gateway/internal/dto"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type Gateway struct {
 	Orders         ordersv1.OrdersServiceClient
+	Health         grpc_health_v1.HealthClient
 	RequestTimeout time.Duration
 }
 
@@ -140,4 +142,23 @@ func decodeJSONStrict(w http.ResponseWriter, r *http.Request, dst any) error {
 	}
 
 	return nil
+}
+
+func (g *Gateway) HandleLiveness(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (g *Gateway) HandleReadiness(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), g.RequestTimeout)
+	defer cancel()
+
+	if _, err := g.Health.Check(ctx, &grpc_health_v1.HealthCheckRequest{}); err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, apiError{
+			Error: "orders service is not ready",
+			Code:  "ORDERS_UNAVAILABLE",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 }

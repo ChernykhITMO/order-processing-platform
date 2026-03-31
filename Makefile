@@ -24,12 +24,12 @@ migrate-down:
 	done
 
 docker-migrate-up:
-	$(COMPOSE) run --rm migrate-orders -path /migrations -database "$(ORDERS_DSN_DOCKER)" up
-	$(COMPOSE) run --rm migrate-payments -path /migrations -database "$(PAYMENTS_DSN_DOCKER)" up
+	$(COMPOSE) run --rm migrate-orders -db "$(ORDERS_DSN_DOCKER)" -dir /migrations -command up
+	$(COMPOSE) run --rm migrate-payments -db "$(PAYMENTS_DSN_DOCKER)" -dir /migrations -command up
 
 docker-migrate-down:
-	$(COMPOSE) run --rm migrate-orders -path /migrations -database "$(ORDERS_DSN_DOCKER)" down -all
-	$(COMPOSE) run --rm migrate-payments -path /migrations -database "$(PAYMENTS_DSN_DOCKER)" down -all
+	$(COMPOSE) run --rm migrate-orders -db "$(ORDERS_DSN_DOCKER)" -dir /migrations -command reset
+	$(COMPOSE) run --rm migrate-payments -db "$(PAYMENTS_DSN_DOCKER)" -dir /migrations -command reset
 
 docker-migrate-reset: docker-migrate-down docker-migrate-up
 

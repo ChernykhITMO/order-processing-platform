@@ -11,7 +11,7 @@ func (s *Storage) MarkSent(ctx context.Context, id int64) error {
 
 	const query = `UPDATE events SET sent_at = $1, locked_at = NULL WHERE id = $2`
 
-	if _, err := s.db.ExecContext(ctx, query, time.Now(), id); err != nil {
+	if _, err := s.db.Exec(ctx, query, time.Now(), id); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

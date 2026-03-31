@@ -6,10 +6,10 @@ run:
 	go run cmd/main.go
 
 migrate-up:
-	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+	go run ./cmd/migrator -db "$(DB_URL)" -dir "$(MIGRATIONS_DIR)" -command up
 
 migrate-down:
-	migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
+	go run ./cmd/migrator -db "$(DB_URL)" -dir "$(MIGRATIONS_DIR)" -command down
 
 db-create:
 	docker compose -f ../docker-compose.yaml exec postgres createdb -U postgres $(DB)

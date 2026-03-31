@@ -5,12 +5,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -24,13 +25,13 @@ func getDSN(t *testing.T) string {
 	return dsn
 }
 
-func cleanupTables(t *testing.T, db *sql.DB) {
+func cleanupTables(t *testing.T, db *pgxpool.Pool) {
 	const query = `
 	TRUNCATE TABLE events, order_items, orders 
     RESTART IDENTITY CASCADE
     `
 
-	if _, err := db.Exec(query); err != nil {
+	if _, err := db.Exec(context.Background(), query); err != nil {
 		t.Fatalf("db exec: %v", err)
 	}
 }
@@ -38,18 +39,18 @@ func cleanupTables(t *testing.T, db *sql.DB) {
 func TestCreate_Integration(t *testing.T) {
 	dsn := getDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupTables(t, db)
 	defer cleanupTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -98,18 +99,18 @@ func TestCreate_Integration(t *testing.T) {
 func TestOutbox_Integration(t *testing.T) {
 	dsn := getDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupTables(t, db)
 	defer cleanupTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -155,18 +156,18 @@ func TestOutbox_Integration(t *testing.T) {
 func TestMultipleOrders_Integration(t *testing.T) {
 	dsn := getDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupTables(t, db)
 	defer cleanupTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -222,18 +223,18 @@ func TestMultipleOrders_Integration(t *testing.T) {
 func TestOutbox_Locking_Integration(t *testing.T) {
 	dsn := getDSN(t)
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
 	defer func() {
-		_ = db.Close()
+		db.Close()
 	}()
 
 	cleanupTables(t, db)
 	defer cleanupTables(t, db)
 
-	storage, err := New(dsn)
+	storage, err := New(configForTest(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}
@@ -264,5 +265,15 @@ func TestOutbox_Locking_Integration(t *testing.T) {
 	}
 	if eventID1 == eventID2 {
 		t.Fatalf("expected different event ids")
+	}
+}
+
+func configForTest(dsn string) config.DBConfig {
+	return config.DBConfig{
+		DSN:               dsn,
+		MaxConns:          4,
+		MinConns:          1,
+		MaxConnIdleTime:   time.Minute,
+		HealthCheckPeriod: time.Second,
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 
 	_ "github.com/ChernykhITMO/order-processing-platform/gateway/docs"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -52,12 +53,15 @@ func main() {
 
 	gw := &handlers.Gateway{
 		Orders:         ordersv1.NewOrdersServiceClient(conn),
+		Health:         grpc_health_v1.NewHealthClient(conn),
 		RequestTimeout: 2 * time.Second,
 	}
 
 	metrics.Register()
 
 	apiMux := http.NewServeMux()
+	apiMux.Handle("/healthz", http.HandlerFunc(gw.HandleLiveness))
+	apiMux.Handle("/readyz", http.HandlerFunc(gw.HandleReadiness))
 	apiMux.Handle("/metrics", promhttp.Handler())
 	apiMux.Handle("/orders", middleware.Instrument("gateway", "/orders", http.HandlerFunc(gw.HandleOrders)))
 	apiMux.Handle("/orders/", middleware.Instrument("gateway", "/orders/{id}", http.HandlerFunc(gw.HandleOrderById)))

@@ -6,7 +6,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN GOOS=linux go build -trimpath -ldflags="-s -w" -o app ./cmd/
+RUN GOOS=linux go build -trimpath -ldflags="-s -w" -o app ./cmd/main.go
+RUN GOOS=linux go build -trimpath -ldflags="-s -w" -o migrator ./cmd/migrator
 
 FROM gcr.io/distroless/base-debian12
 WORKDIR /
@@ -16,3 +17,12 @@ EXPOSE 8082
 
 USER nonroot:nonroot
 ENTRYPOINT ["/app"]
+
+FROM gcr.io/distroless/base-debian12 AS migrator
+WORKDIR /
+
+COPY --from=build /src/migrator /migrator
+COPY migrations /migrations
+
+USER nonroot:nonroot
+ENTRYPOINT ["/migrator"]

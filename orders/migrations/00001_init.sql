@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE IF NOT EXISTS orders
 (
     id         BIGSERIAL PRIMARY KEY,
@@ -29,3 +30,8 @@ CREATE TABLE IF NOT EXISTS events
 
 CREATE INDEX idx_events_unsent ON events (sent_at) WHERE sent_at IS NULL;
 CREATE INDEX idx_events_unlocked ON events (locked_at) WHERE locked_at IS NULL;
+
+-- +goose Down
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;

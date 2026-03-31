@@ -2,13 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain/events"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *Storage) GetNewEvent(ctx context.Context) (events.OrderCreated, int64, error) {
@@ -17,15 +17,8 @@ func (s *Storage) GetNewEvent(ctx context.Context) (events.OrderCreated, int64, 
 		createdOrder events.OrderCreated
 		payload      []byte
 		eventID      int64
+		found        bool
 	)
-
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return createdOrder, eventID, fmt.Errorf("%s: %w", op, err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
 
 	const query = `
 		UPDATE events
@@ -41,19 +34,26 @@ func (s *Storage) GetNewEvent(ctx context.Context) (events.OrderCreated, int64, 
 		RETURNING payload, id
 	`
 
-	if err := tx.QueryRowContext(ctx, query, time.Now()).Scan(&payload, &eventID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return events.OrderCreated{}, 0, nil
+	err := s.txManager.WithinTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, query, time.Now()).Scan(&payload, &eventID); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return fmt.Errorf("%s: %w", op, err)
 		}
-		return createdOrder, eventID, fmt.Errorf("%s: %w", op, err)
-	}
+		found = true
 
-	if err := json.Unmarshal(payload, &createdOrder); err != nil {
-		return createdOrder, eventID, fmt.Errorf("%s: %w", op, err)
-	}
+		if err := json.Unmarshal(payload, &createdOrder); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 
-	if err := tx.Commit(); err != nil {
-		return createdOrder, eventID, fmt.Errorf("%s: %w", op, err)
+		return nil
+	})
+	if err != nil {
+		return createdOrder, eventID, err
+	}
+	if !found {
+		return events.OrderCreated{}, 0, nil
 	}
 
 	return createdOrder, eventID, nil

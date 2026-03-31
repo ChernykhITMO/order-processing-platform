@@ -2,13 +2,13 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *Storage) GetNewEvent(ctx context.Context) (events.PaymentStatus, error) {
@@ -34,8 +34,8 @@ func (s *Storage) GetNewEvent(ctx context.Context) (events.PaymentStatus, error)
 		id      int64
 	)
 
-	if err := s.db.QueryRowContext(ctx, query, time.Now()).Scan(&payload, &id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.QueryRow(ctx, query, time.Now()).Scan(&payload, &id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return events.PaymentStatus{}, nil
 		}
 		return events.PaymentStatus{}, fmt.Errorf("%s: %w", op, err)

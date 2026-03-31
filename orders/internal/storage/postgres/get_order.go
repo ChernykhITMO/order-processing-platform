@@ -2,11 +2,12 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/domain"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, error) {
@@ -22,12 +23,12 @@ func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, er
 	ORDER BY i.id;
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, id)
+	rows, err := s.db.Query(ctx, query, id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer func() {
-		_ = rows.Close()
+		rows.Close()
 	}()
 
 	var (
@@ -36,9 +37,9 @@ func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, er
 		status    string
 		createdAt time.Time
 		updatedAt time.Time
-		productID sql.NullInt64
-		quantity  sql.NullInt32
-		price     sql.NullInt64
+		productID pgtype.Int8
+		quantity  pgtype.Int4
+		price     pgtype.Int8
 		find      bool
 	)
 
@@ -62,7 +63,7 @@ func (s *Storage) GetOrderByID(ctx context.Context, id int64) (*domain.Order, er
 	}
 
 	if !find {
-		return nil, fmt.Errorf("%s: %w", op, sql.ErrNoRows)
+		return nil, fmt.Errorf("%s: %w", op, pgx.ErrNoRows)
 	}
 
 	if err := rows.Err(); err != nil {

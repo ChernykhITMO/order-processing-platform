@@ -7,6 +7,6 @@ func (s *TxStorage) SaveEvent(ctx context.Context, eventType string, payload []b
           INSERT INTO events (event_type, payload, aggregate_id)
           VALUES ($1, $2, $3)
       `
-	_, err := s.tx.ExecContext(ctx, query, eventType, payload, aggregateID)
+	_, err := s.tx.Exec(ctx, query, eventType, payload, aggregateID)
 	return err
 }

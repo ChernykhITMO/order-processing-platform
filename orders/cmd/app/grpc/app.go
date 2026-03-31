@@ -8,6 +8,8 @@ import (
 	api "github.com/ChernykhITMO/order-processing-platform/orders/internal/controller/grpc"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	grpc_health_v1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type App struct {
@@ -20,6 +22,9 @@ func New(log *slog.Logger, order *services.Order, port int) *App {
 	gRPCServer := grpc.NewServer()
 
 	api.Register(gRPCServer, order)
+	healthSrv := health.NewServer()
+	healthSrv.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(gRPCServer, healthSrv)
 
 	return &App{
 		log:        log,

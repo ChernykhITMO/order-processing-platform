@@ -11,6 +11,7 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/payments/cmd/app"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/health"
 	"github.com/joho/godotenv"
 )
 
@@ -46,8 +47,11 @@ func main() {
 	application, err := app.New(log, cfg)
 
 	log.Info("config",
-		slog.String("db", sanitizeDSN(cfg.DBDSN)),
+		slog.String("db", sanitizeDSN(cfg.DB.DSN)),
+		slog.Int64("db_max_conns", int64(cfg.DB.MaxConns)),
+		slog.Int64("db_min_conns", int64(cfg.DB.MinConns)),
 		slog.Any("brokers", cfg.KafkaBrokers),
+		slog.String("health_addr", cfg.HealthAddr),
 	)
 
 	if err != nil {
@@ -59,12 +63,19 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	go func() {
+		healthSrv := health.NewServer(cfg.HealthAddr, log, application.CheckReadiness)
+		if err := healthSrv.Run(ctx); err != nil {
+			log.Error("health server stopped with error", slog.Any("err", err))
+			cancel()
+		}
+	}()
+
 	if err := application.Run(ctx); err != nil {
 		log.Error("application stopped with error", slog.Any("err", err))
 		os.Exit(1)
 	}
 }
-
 func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
@@ -85,7 +96,6 @@ func setupLogger(env string) *slog.Logger {
 
 	return log
 }
-
 
 func sanitizeDSN(dsn string) string {
 	u, err := url.Parse(dsn)

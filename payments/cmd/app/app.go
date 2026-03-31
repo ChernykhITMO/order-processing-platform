@@ -11,7 +11,6 @@ import (
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/controller"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_consume"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_produce"
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/services/event_sender"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/storage/postgres"
@@ -23,13 +22,13 @@ type App struct {
 	producer     *kafka.Producer
 	sender       *event_sender.Sender
 	senderPeriod time.Duration
-	storage      ports.Storage
+	storage      postgres.Repository
 }
 
 func New(log *slog.Logger, cfg config.Config) (*App, error) {
 	const op = "app.New"
 
-	storage, err := postgres.New(cfg.DBDSN)
+	storage, err := postgres.New(cfg.DB)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -106,4 +105,11 @@ func (a *App) Stop() {
 
 	a.log.With(slog.String("op", op)).
 		Info("stopping payments server")
+}
+
+func (a *App) CheckReadiness(ctx context.Context) error {
+	if a.storage == nil {
+		return nil
+	}
+	return a.storage.Ping(ctx)
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	grpcapp "github.com/ChernykhITMO/order-processing-platform/orders/cmd/app/grpc"
+	"github.com/ChernykhITMO/order-processing-platform/orders/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/kafka_produce"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	"github.com/ChernykhITMO/order-processing-platform/orders/internal/services/event_sender"
@@ -25,13 +26,13 @@ type App struct {
 func New(
 	log *slog.Logger,
 	grpcPort int,
-	dsn string,
+	dbCfg config.DBConfig,
 	kafkaBrokers []string,
 	kafkaTopic string,
 	kafkaPeriod time.Duration,
 ) (*App, error) {
 
-	storage, err := postgres.New(dsn)
+	storage, err := postgres.New(dbCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -86,4 +87,11 @@ func (a *App) Stop() {
 			log.Warn("storage close", slog.Any("err", err))
 		}
 	}
+}
+
+func (a *App) CheckReadiness(ctx context.Context) error {
+	if a.storage == nil {
+		return nil
+	}
+	return a.storage.Ping(ctx)
 }

@@ -17,6 +17,7 @@ type Config struct {
 	DialTimeout    time.Duration `yaml:"dial_timeout"`
 	Timeout        time.Duration `yaml:"timeout"`
 	TTL            time.Duration `yaml:"ttl"`
+	HealthAddr     string
 	KafkaBrokers   []string
 	TopicStatus    string
 	ConsumerGroup  string
@@ -54,6 +55,7 @@ func Load() (Config, error) {
 		Addr:           redisAddr,
 		DB:             redisDB,
 		TTL:            getEnvDuration("REDIS_TTL", 0),
+		HealthAddr:     getEnvOrDefault("NOTIFICATIONS_HEALTH_ADDR", ":8083"),
 		SessionTimeout: getEnvDuration("SESSION_TIMEOUT", 30*time.Second),
 		KafkaBrokers:   kafkaBrokers,
 		TopicStatus:    topicStatus,
@@ -92,6 +94,13 @@ func getEnvDuration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	return parsed
+}
+
+func getEnvOrDefault(key, def string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return def
 }
 
 func parseKafkaBrokers(raw string) []string {

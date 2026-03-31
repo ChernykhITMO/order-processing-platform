@@ -132,18 +132,18 @@ services:
       - prometheus
 
   migrate-orders:
-    image: migrate/migrate:4
-    volumes:
-      - ./orders/migrations:/migrations:ro
-    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/orders_db?sslmode=disable", "up"]
+    build:
+      context: ./orders
+      target: migrator
+    command: ["-db", "postgres://postgres:postgres@postgres:5432/orders_db?sslmode=disable", "-dir", "/migrations", "-command", "up"]
     depends_on:
       - postgres
 
   migrate-payments:
-    image: migrate/migrate:4
-    volumes:
-      - ./payments/migrations:/migrations:ro
-    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/payments_db?sslmode=disable", "up"]
+    build:
+      context: ./payments
+      target: migrator
+    command: ["-db", "postgres://postgres:postgres@postgres:5432/payments_db?sslmode=disable", "-dir", "/migrations", "-command", "up"]
     depends_on:
       - postgres
 

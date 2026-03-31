@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ChernykhITMO/order-processing-platform/payments/internal/config"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain"
 	"github.com/ChernykhITMO/order-processing-platform/payments/internal/domain/events"
 	kafkaproduce "github.com/ChernykhITMO/order-processing-platform/payments/internal/kafka_produce"
@@ -48,6 +49,16 @@ func cleanupPaymentsTables(t *testing.T, db *sql.DB) {
 	const query = `TRUNCATE TABLE payments, events, processed_events RESTART IDENTITY CASCADE`
 	if _, err := db.Exec(query); err != nil {
 		t.Fatalf("db exec: %v", err)
+	}
+}
+
+func paymentsPGTestConfig(dsn string) config.DBConfig {
+	return config.DBConfig{
+		DSN:               dsn,
+		MaxConns:          4,
+		MinConns:          1,
+		MaxConnIdleTime:   time.Minute,
+		HealthCheckPeriod: time.Second,
 	}
 }
 
@@ -98,7 +109,7 @@ func TestPaymentsOutboxSender_Integration(t *testing.T) {
 		t.Fatalf("insert event: %v", err)
 	}
 
-	storage, err := postgres.New(dsn)
+	storage, err := postgres.New(paymentsPGTestConfig(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}

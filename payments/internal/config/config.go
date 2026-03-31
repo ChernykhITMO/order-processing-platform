@@ -3,18 +3,28 @@ package config
 import (
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Config struct {
-	DBDSN         string
+	DB            DBConfig
+	HealthAddr    string
 	KafkaBrokers  []string
 	TopicOrder    string
 	TopicStatus   string
 	EventType     string
 	ConsumerGroup string
 	SenderPeriod  time.Duration
+}
+
+type DBConfig struct {
+	DSN               string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnIdleTime   time.Duration
+	HealthCheckPeriod time.Duration
 }
 
 func Load() (Config, error) {
@@ -50,9 +60,32 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	maxConns, err := getEnvInt32WithDefault("PAYMENTS_PG_MAX_CONNS", 10)
+	if err != nil {
+		return Config{}, err
+	}
+	minConns, err := getEnvInt32WithDefault("PAYMENTS_PG_MIN_CONNS", 2)
+	if err != nil {
+		return Config{}, err
+	}
+	maxConnIdleTime, err := getEnvDurationWithDefault("PAYMENTS_PG_MAX_CONN_IDLE_TIME", 5*time.Minute)
+	if err != nil {
+		return Config{}, err
+	}
+	healthCheckPeriod, err := getEnvDurationWithDefault("PAYMENTS_PG_HEALTH_CHECK_PERIOD", 30*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
 
 	return Config{
-		DBDSN:         dsn,
+		DB: DBConfig{
+			DSN:               dsn,
+			MaxConns:          maxConns,
+			MinConns:          minConns,
+			MaxConnIdleTime:   maxConnIdleTime,
+			HealthCheckPeriod: healthCheckPeriod,
+		},
+		HealthAddr:    getEnvOrDefault("PAYMENTS_HEALTH_ADDR", ":8082"),
 		KafkaBrokers:  kafkaBrokers,
 		TopicOrder:    topicOrder,
 		TopicStatus:   topicStatus,
@@ -70,6 +103,13 @@ func getEnv(key string) (string, error) {
 	return val, nil
 }
 
+func getEnvOrDefault(key, def string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return def
+}
+
 func getEnvDuration(key string) (time.Duration, error) {
 	val, err := getEnv(key)
 	if err != nil {
@@ -79,6 +119,34 @@ func getEnvDuration(key string) (time.Duration, error) {
 	if err != nil {
 		return 0, errors.New(key + " is invalid duration: " + err.Error())
 	}
+	return parsed, nil
+}
+
+func getEnvInt32WithDefault(key string, def int32) (int32, error) {
+	val := os.Getenv(key)
+	if val == "" {
+		return def, nil
+	}
+
+	parsed, err := strconv.ParseInt(val, 10, 32)
+	if err != nil {
+		return 0, errors.New(key + " is invalid int: " + err.Error())
+	}
+
+	return int32(parsed), nil
+}
+
+func getEnvDurationWithDefault(key string, def time.Duration) (time.Duration, error) {
+	val := os.Getenv(key)
+	if val == "" {
+		return def, nil
+	}
+
+	parsed, err := time.ParseDuration(val)
+	if err != nil {
+		return 0, errors.New(key + " is invalid duration: " + err.Error())
+	}
+
 	return parsed, nil
 }
 

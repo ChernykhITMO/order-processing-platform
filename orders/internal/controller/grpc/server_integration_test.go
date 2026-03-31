@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	orderscfg "github.com/ChernykhITMO/order-processing-platform/orders/internal/config"
 	orderssvc "github.com/ChernykhITMO/order-processing-platform/orders/internal/services"
 	orderspg "github.com/ChernykhITMO/order-processing-platform/orders/internal/storage/postgres"
 	ordersv1 "github.com/ChernykhITMO/order-processing-proto/gen/go/opp/orders/v1"
@@ -34,6 +35,16 @@ func getOrdersDSN(t *testing.T) string {
 		t.Skip("ORDERS_PG_DSN_TEST is not set")
 	}
 	return dsn
+}
+
+func ordersPGTestConfig(dsn string) orderscfg.DBConfig {
+	return orderscfg.DBConfig{
+		DSN:               dsn,
+		MaxConns:          4,
+		MinConns:          1,
+		MaxConnIdleTime:   time.Minute,
+		HealthCheckPeriod: time.Second,
+	}
 }
 
 func cleanupOrdersTables(t *testing.T, db *sql.DB) {
@@ -91,7 +102,7 @@ func TestOrdersGRPC_Integration(t *testing.T) {
 	cleanupOrdersTables(t, db)
 	defer cleanupOrdersTables(t, db)
 
-	storage, err := orderspg.New(dsn)
+	storage, err := orderspg.New(ordersPGTestConfig(dsn))
 	if err != nil {
 		t.Fatalf("new storage: %v", err)
 	}

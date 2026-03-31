@@ -10,6 +10,7 @@ import (
 
 	"github.com/ChernykhITMO/order-processing-platform/notifications/cmd/app"
 	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/config"
+	"github.com/ChernykhITMO/order-processing-platform/notifications/internal/health"
 	"github.com/joho/godotenv"
 )
 
@@ -44,6 +45,7 @@ func main() {
 
 	log = log.With(
 		slog.String("redis_addr", cfg.Addr),
+		slog.String("health_addr", cfg.HealthAddr),
 		slog.String("kafka_topic", cfg.TopicStatus),
 		slog.String("kafka_consumer_group", cfg.ConsumerGroup),
 		slog.Duration("session_timeout", cfg.SessionTimeout),
@@ -59,6 +61,14 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	go func() {
+		healthSrv := health.NewServer(cfg.HealthAddr, log, application.CheckReadiness)
+		if err := healthSrv.Run(ctx); err != nil {
+			log.Error("health server stopped with error", slog.Any("err", err))
+			stop()
+		}
+	}()
 
 	if err := application.Run(ctx); err != nil {
 		log.Error("application stopped with error", slog.Any("err", err))

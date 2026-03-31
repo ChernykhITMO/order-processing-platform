@@ -9,18 +9,27 @@ import (
 )
 
 type Config struct {
-	Env   string
-	GRPC  GRPCConfig
-	DB    DBConfig
-	Kafka KafkaConfig
+	Env    string
+	GRPC   GRPCConfig
+	Health HealthConfig
+	DB     DBConfig
+	Kafka  KafkaConfig
 }
 
 type GRPCConfig struct {
 	Port int
 }
 
+type HealthConfig struct {
+	Addr string
+}
+
 type DBConfig struct {
-	DSN string
+	DSN               string
+	MaxConns          int32
+	MinConns          int32
+	MaxConnIdleTime   time.Duration
+	HealthCheckPeriod time.Duration
 }
 
 type KafkaConfig struct {
@@ -29,7 +38,7 @@ type KafkaConfig struct {
 	Period  time.Duration
 }
 
-func Load(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey string) (*Config, error) {
+func Load(envKey, grpcPortKey, healthAddrKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPeriodKey string) (*Config, error) {
 	env := getEnv(envKey)
 	if env == "" {
 		return nil, fmt.Errorf("env %s is empty", envKey)
@@ -48,6 +57,23 @@ func Load(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPe
 	if pgDSN == "" {
 		return nil, fmt.Errorf("env %s is empty", pgDSNKey)
 	}
+	healthAddr := getEnvWithDefault(healthAddrKey, ":8081")
+	maxConns, err := getEnvInt32WithDefault("ORDERS_PG_MAX_CONNS", 10)
+	if err != nil {
+		return nil, err
+	}
+	minConns, err := getEnvInt32WithDefault("ORDERS_PG_MIN_CONNS", 2)
+	if err != nil {
+		return nil, err
+	}
+	maxConnIdleTime, err := getEnvDurationWithDefault("ORDERS_PG_MAX_CONN_IDLE_TIME", 5*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	healthCheckPeriod, err := getEnvDurationWithDefault("ORDERS_PG_HEALTH_CHECK_PERIOD", 30*time.Second)
+	if err != nil {
+		return nil, err
+	}
 
 	kafkaBrokers := parseCSV(getEnv(kafkaBrokersKey))
 	kafkaTopic := getEnv(kafkaTopicKey)
@@ -61,8 +87,15 @@ func Load(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPe
 		GRPC: GRPCConfig{
 			Port: grpcPort,
 		},
+		Health: HealthConfig{
+			Addr: healthAddr,
+		},
 		DB: DBConfig{
-			DSN: pgDSN,
+			DSN:               pgDSN,
+			MaxConns:          maxConns,
+			MinConns:          minConns,
+			MaxConnIdleTime:   maxConnIdleTime,
+			HealthCheckPeriod: healthCheckPeriod,
 		},
 		Kafka: KafkaConfig{
 			Brokers: kafkaBrokers,
@@ -74,6 +107,41 @@ func Load(envKey, grpcPortKey, pgDSNKey, kafkaBrokersKey, kafkaTopicKey, kafkaPe
 
 func getEnv(key string) string {
 	return os.Getenv(key)
+}
+
+func getEnvWithDefault(key, def string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return def
+}
+
+func getEnvInt32WithDefault(key string, def int32) (int32, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return def, nil
+	}
+
+	parsed, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("parse %s: %w", key, err)
+	}
+
+	return int32(parsed), nil
+}
+
+func getEnvDurationWithDefault(key string, def time.Duration) (time.Duration, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return def, nil
+	}
+
+	parsed, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("parse %s: %w", key, err)
+	}
+
+	return parsed, nil
 }
 
 func parseDuration(value string) (time.Duration, error) {

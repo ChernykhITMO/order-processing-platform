@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ChernykhITMO/order-processing-platform/payments/internal/ports"
+	"github.com/jackc/pgx/v5"
 )
 
 const rowsInserted = 1
@@ -18,36 +18,23 @@ func (s *TxStorage) TryMarkProcessed(ctx context.Context, eventId int64) (bool, 
 		ON CONFLICT (event_id) DO NOTHING;
 	`
 
-	res, err := s.tx.ExecContext(ctx, query, eventId)
+	res, err := s.tx.Exec(ctx, query, eventId)
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
-	n, err := res.RowsAffected()
-	if err != nil {
-		return false, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return n == rowsInserted, nil
+	return res.RowsAffected() == rowsInserted, nil
 }
 
-func (s *Storage) RunInTx(ctx context.Context, fn func(tx ports.StorageTx) error) error {
+func (s *Storage) RunInTx(ctx context.Context, fn func(tx TxRepository) error) error {
 	const op = "storage.postgres.RunInTx"
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
+	return s.txManager.WithinTransaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+		txStorage := &TxStorage{tx: tx}
+		if err := fn(txStorage); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 
-	txStorage := &TxStorage{tx: tx}
-
-	if err := fn(txStorage); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
+		return nil
+	})
 }
